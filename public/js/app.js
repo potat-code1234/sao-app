@@ -33,6 +33,10 @@ async function api(method, url, body) {
     headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
+  if (res.status === 401) {
+    location.href = '/login'; // session expired or logged out
+    throw new Error('Login required');
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `${res.status} ${res.statusText}`);
   return data;
@@ -111,7 +115,10 @@ const state = {
   view: [location.hash.slice(1), localGet('view')].find((v) => NAV.some((n) => n.id === v)) || 'equipment',
   filters: { q: '', slot: 'all', set: 'all', owned: 'all', sort: 'value' },
   opt: { running: false, progress: null, result: null },
+  me: { role: 'admin', auth: false, user: null }, // from /api/me; "viewer" = read-only login
 };
+
+const canEdit = () => state.me.role === 'admin';
 
 function indexData() {
   state.items.sort((a, b) => String(a.name).localeCompare(String(b.name)));
@@ -127,10 +134,12 @@ function upsert(list, obj) {
   indexData();
 }
 
+// The read-only login keeps its own profile (base stats, equipped, optimizer settings) in this browser.
 let saveTimer = null;
 function saveProfile() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
+    if (!canEdit()) return localSet('viewerProfile', JSON.stringify(state.profile));
     api('PUT', '/api/profile', state.profile).catch((e) => toast(`Could not save profile: ${e.message}`, 'err'));
   }, 350);
 }
@@ -190,9 +199,13 @@ function renderTopbar() {
   const errs = state.errors.length
     ? `<span class="tb-chip warn" title="${esc(state.errors.join('\n'))}">${uiIcon('info')} ${state.errors.length} unreadable file${state.errors.length > 1 ? 's' : ''}</span>`
     : '';
+  const who = state.me.auth
+    ? `<span class="tb-chip ${canEdit() ? '' : 'ro'}" title="Logged in as ${esc(state.me.user)}">${uiIcon(canEdit() ? 'edit' : 'lock')} ${canEdit() ? 'Admin' : 'Read-only'}</span>`
+    : '';
   $('#topbar-status').innerHTML = `
     <span class="tb-chip"><b>${state.items.length}</b> items <span class="muted">(${owned} owned)</span></span>
-    <span class="tb-chip"><b>${state.sets.length}</b> sets</span>${errs}`;
+    <span class="tb-chip"><b>${state.sets.length}</b> sets</span>${errs}${who}`;
+  $('#logout').hidden = !state.me.auth;
 }
 
 let lastView = null;
@@ -391,9 +404,9 @@ function itemCard(it) {
     <div class="item-actions">
       <button class="btn sm ghost" data-action="equip-item" data-id="${id}" title="Equip in a matching slot">${uiIcon('equip')} Equip</button>
       <span class="spacer"></span>
-      <button class="icon-btn sm" data-action="edit-item" data-id="${id}" title="Edit">${uiIcon('edit')}</button>
-      <button class="icon-btn sm" data-action="dup-item" data-id="${id}" title="Duplicate">${uiIcon('copy')}</button>
-      <button class="icon-btn sm danger" data-action="delete-item" data-id="${id}" title="Delete">${uiIcon('trash')}</button>
+      <button class="icon-btn sm admin-only" data-action="edit-item" data-id="${id}" title="Edit">${uiIcon('edit')}</button>
+      <button class="icon-btn sm admin-only" data-action="dup-item" data-id="${id}" title="Duplicate">${uiIcon('copy')}</button>
+      <button class="icon-btn sm danger admin-only" data-action="delete-item" data-id="${id}" title="Delete">${uiIcon('trash')}</button>
     </div>
   </article>`;
 }
@@ -413,7 +426,7 @@ function renderItems() {
   for (const it of state.items) counts[it.slot] = (counts[it.slot] || 0) + 1;
   return `<div class="layout-single">
     <section class="panel">
-      ${panelHead('Item storage', `<button class="btn btn-primary" data-action="new-item">${uiIcon('plus')} New item</button>`)}
+      ${panelHead('Item storage', `<button class="btn btn-primary admin-only" data-action="new-item">${uiIcon('plus')} New item</button>`)}
       <div class="toolbar">
         <label class="search">${uiIcon('search')}<input id="item-search" data-filter="q" value="${esc(f.q)}" placeholder="Search name, set, effect…"></label>
         <select data-filter="set" title="Set">
@@ -458,7 +471,7 @@ function setCard(set) {
     <header class="set-card-head">
       <div><h3>${esc(set.name)}</h3>
         <span class="muted">${pieces.length} piece${pieces.length === 1 ? '' : 's'} · ${set.cumulative !== false ? 'bonuses stack' : 'highest tier only'} · ${eqCount} equipped</span></div>
-      <div class="row-actions">
+      <div class="row-actions admin-only">
         <button class="icon-btn" data-action="new-item-in-set" data-id="${id}" title="Add an item to this set">${uiIcon('plus')}</button>
         <button class="icon-btn" data-action="edit-set" data-id="${id}" title="Edit set">${uiIcon('edit')}</button>
         <button class="icon-btn danger" data-action="delete-set" data-id="${id}" title="Delete set">${uiIcon('trash')}</button>
@@ -479,7 +492,7 @@ function setCard(set) {
 function renderSets() {
   return `<div class="layout-single">
     <section class="panel">
-      ${panelHead('Sets', `<button class="btn btn-primary" data-action="new-set">${uiIcon('plus')} New set</button>`)}
+      ${panelHead('Sets', `<button class="btn btn-primary admin-only" data-action="new-set">${uiIcon('plus')} New set</button>`)}
       <div class="set-grid">${state.sets.length ? state.sets.map(setCard).join('') : empty('No sets yet. Create one here or straight from the item editor. Sets are saved in <code>Items/Sets</code>.')}</div>
     </section>
   </div>`;
@@ -541,6 +554,18 @@ function toggle(flag, label, checked, hint = '') {
   return `<label class="toggle" ${hint ? `title="${esc(hint)}"` : ''}><input type="checkbox" data-optflag="${flag}" ${checked ? 'checked' : ''}><span class="toggle-ui"></span><span>${label}</span></label>`;
 }
 
+// Weight = slider (0 to WEIGHT_MAX) plus a number box for exact or out-of-range values.
+const WEIGHT_MAX = 5;
+const weightPct = (v) => (Math.min(Math.max(Number(v) || 0, 0), WEIGHT_MAX) / WEIGHT_MAX) * 100;
+
+function weightSlider(key, value) {
+  const label = esc(STAT_MAP[key].label);
+  return `<div class="wt-slider" style="--p:${weightPct(value)}%">
+    <input type="range" min="0" max="${WEIGHT_MAX}" step="0.05" data-opt="weights" data-key="${key}" value="${Math.max(0, Number(value) || 0)}" aria-label="${label} weight">
+    <input type="number" step="0.05" data-opt="weights" data-key="${key}" value="${value ?? ''}" placeholder="0" aria-label="${label} weight value">
+  </div>`;
+}
+
 function renderOptimizer() {
   const o = state.profile.optimizer;
   const val = (obj, k) => (obj?.[k] === undefined || obj?.[k] === null ? '' : esc(obj[k]));
@@ -557,9 +582,9 @@ function renderOptimizer() {
         <table class="weights">
           <thead><tr><th>Stat</th><th>Weight</th><th>Min</th><th>Cap</th></tr></thead>
           <tbody>${STATS.map(
-            (st) => `<tr>
+            (st) => `<tr class="${Number(o.weights?.[st.key]) ? '' : 'off'}">
               <td><span class="wt-stat">${statIco(st.key, 'sm')}${st.label}</span></td>
-              <td><input type="number" step="0.05" data-opt="weights" data-key="${st.key}" value="${val(o.weights, st.key)}" placeholder="0"></td>
+              <td class="wt-cell">${weightSlider(st.key, o.weights?.[st.key])}</td>
               <td><input type="number" step="any" data-opt="mins" data-key="${st.key}" value="${val(o.mins, st.key)}" placeholder="—"></td>
               <td><input type="number" step="any" data-opt="caps" data-key="${st.key}" value="${val(o.caps, st.key)}" placeholder="—"></td>
             </tr>`
@@ -1449,7 +1474,7 @@ function openSlotPicker(slotId) {
     </div>
     <div class="modal-body picker-list"></div>
     <footer class="modal-foot">
-      <button class="btn" data-new>${uiIcon('plus')} New ${SLOT_TYPES[slot.type].label.toLowerCase()}</button>
+      <button class="btn admin-only" data-new>${uiIcon('plus')} New ${SLOT_TYPES[slot.type].label.toLowerCase()}</button>
       <span class="spacer"></span>
       <button class="btn" data-unequip>Leave empty</button>
     </footer>`,
@@ -1637,6 +1662,10 @@ const ACTIONS = {
   },
   'run-opt': runOptimizer,
   'cancel-opt': cancelOptimizer,
+  logout: async () => {
+    await fetch('/api/logout', { method: 'POST' }).catch(() => {});
+    location.href = '/login';
+  },
   'equip-result': (el) => {
     const res = state.opt.result?.results[+el.dataset.index];
     if (!res) return;
@@ -1647,12 +1676,19 @@ const ACTIONS = {
   },
 };
 
+// Actions that change items or sets on the server.
+const ADMIN_ACTIONS = new Set(['new-item', 'new-item-in-set', 'edit-item', 'dup-item', 'delete-item', 'toggle-owned', 'new-set', 'edit-set', 'delete-set']);
+
 document.addEventListener('click', (e) => {
   const nav = e.target.closest('[data-nav]');
   if (nav) return go(nav.dataset.nav);
   const el = e.target.closest('[data-action]');
   if (!el || el.disabled) return;
   const fn = ACTIONS[el.dataset.action];
+  if (fn && ADMIN_ACTIONS.has(el.dataset.action) && !canEdit()) {
+    e.preventDefault();
+    return toast('This login is read-only. Log in as admin to change items and sets.', 'warn');
+  }
   if (fn) {
     e.preventDefault();
     e.stopPropagation();
@@ -1692,9 +1728,16 @@ document.addEventListener('input', (e) => {
     const v = num(t.value);
     if (v === null) delete bag[t.dataset.key];
     else bag[t.dataset.key] = v;
-    if (t.dataset.opt === 'weights' && o.preset !== 'custom') {
-      o.preset = 'custom';
-      $$('.preset-row .seg-btn').forEach((b) => b.classList.toggle('on', b.hasAttribute('data-preset-custom')));
+    if (t.dataset.opt === 'weights') {
+      // keep the slider and its number box in step
+      const box = t.closest('.wt-slider');
+      for (const other of $$('input', box)) if (other !== t) other.value = other.type === 'range' ? Math.max(0, v ?? 0) : v ?? '';
+      box.style.setProperty('--p', `${weightPct(v)}%`);
+      t.closest('tr').classList.toggle('off', !v);
+      if (o.preset !== 'custom') {
+        o.preset = 'custom';
+        $$('.preset-row .seg-btn').forEach((b) => b.classList.toggle('on', b.hasAttribute('data-preset-custom')));
+      }
     }
     saveProfile();
   } else if (t.dataset.optnum) {
@@ -1720,12 +1763,22 @@ document.addEventListener('change', (e) => {
 // ---------------------------------------------------------------- boot
 async function loadData(announce = false) {
   try {
-    const d = await api('GET', '/api/data');
+    const [me, d] = await Promise.all([api('GET', '/api/me'), api('GET', '/api/data')]);
+    state.me = me;
+    document.body.classList.toggle('read-only', !canEdit());
     texturePacks = null;
     state.items = d.items || [];
     state.sets = d.sets || [];
     indexData();
-    state.profile = normalizeProfile(d.profile);
+    let profile = d.profile;
+    if (!canEdit()) {
+      try {
+        profile = JSON.parse(localGet('viewerProfile')) || profile;
+      } catch {
+        /* keep the shared profile */
+      }
+    }
+    state.profile = normalizeProfile(profile);
     state.paths = d.paths;
     state.errors = d.errors || [];
     state.loaded = true;

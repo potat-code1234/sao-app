@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAO Gear Login</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1l11 11-11 11L1 12z' fill='%23f6a21a'/%3E%3Cpath d='M12 6l6 6-6 6-6-6z' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; }
+    .login { width: min(380px, 100%); }
+    .login .brand { justify-content: center; margin-bottom: 18px; }
+    .login .brand-title { color: #fff; }
+    .login .brand-sub { color: #b9c6dd; }
+    .login input { padding: 9px 11px; font-size: 15px; }
+    .login form { display: flex; flex-direction: column; gap: 14px; }
+    .login .btn-primary { height: 44px; justify-content: center; letter-spacing: 0.18em; }
+    .login-error { min-height: 1.3em; margin: 0; color: var(--red); font-weight: 600; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="bg" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="login-wrap">
+    <div class="login">
+      <div class="brand">
+        <span class="brand-mark"></span>
+        <div>
+          <div class="brand-title">SAO GEAR</div>
+          <div class="brand-sub">Equipment optimizer</div>
+        </div>
+      </div>
+      <section class="panel">
+        <header class="panel-head"><span class="ph-diamond"></span><h2>Login</h2></header>
+        <div class="panel-body">
+          <form id="login" autocomplete="on">
+            <label class="field"><span>User name</span><input name="user" autocomplete="username" required autofocus></label>
+            <label class="field"><span>Password</span><input name="password" type="password" autocomplete="current-password" required></label>
+            <p class="login-error" id="error" role="alert"></p>
+            <button class="btn btn-primary" type="submit">Link start</button>
+          </form>
+        </div>
+      </section>
+    </div>
+  </div>
+  <script>
+    const form = document.getElementById('login');
+    const error = document.getElementById('error');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      error.textContent = '';
+      const btn = form.querySelector('button');
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user: form.elements.user.value, password: form.elements.password.value }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `${res.status} ${res.statusText}`);
+        location.replace('/');
+      } catch (err) {
+        error.textContent = err.message;
+        form.elements.password.select();
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

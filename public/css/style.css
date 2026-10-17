@@ -128,6 +128,11 @@ code { font: 12.5px/1.4 Consolas, 'Cascadia Mono', monospace; background: rgba(3
 .tb-chip b { color: var(--accent-ink); font: 700 15px/1 var(--num); }
 .tb-chip svg { width: 14px; height: 14px; }
 .tb-chip.warn { background: #fff3dc; border-color: #f3cf91; color: #8a5300; cursor: help; }
+.tb-chip.ro { background: #e3f1ff; border-color: #b6d6f6; color: #1d64b5; }
+
+/* read-only login: hide everything that edits items or sets */
+body.read-only .admin-only { display: none !important; }
+body.read-only .owned-toggle { pointer-events: none; }
 
 /* ---------- layout + SAO round menu ---------- */
 .app { display: grid; grid-template-columns: 108px minmax(0, 1fr); }
@@ -203,7 +208,7 @@ code { font: 12.5px/1.4 Consolas, 'Cascadia Mono', monospace; background: rgba(3
   gap: 20px;
   align-items: start;
 }
-.layout-opt { display: grid; grid-template-columns: minmax(360px, 470px) minmax(0, 1fr); gap: 20px; align-items: start; }
+.layout-opt { display: grid; grid-template-columns: minmax(380px, 530px) minmax(0, 1fr); gap: 20px; align-items: start; }
 .layout-profile { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr); gap: 20px; align-items: start; }
 .layout-single { max-width: 1500px; }
 .col-stack { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
@@ -326,6 +331,7 @@ code { font: 12.5px/1.4 Consolas, 'Cascadia Mono', monospace; background: rgba(3
 
 input:not([type]),
 input[type='text'],
+input[type='password'],
 input[type='number'],
 select,
 textarea {
@@ -725,8 +731,41 @@ img.px { image-rendering: pixelated; }
 .weights th { padding: 6px 4px; border-bottom: 1px solid var(--line); text-align: left; font: 700 11px/1 var(--font); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); }
 .weights td { padding: 3px 4px; border-bottom: 1px solid rgba(38, 50, 72, 0.06); }
 .weights tr:hover td { background: rgba(246, 162, 26, 0.07); }
-.weights input { width: 100%; max-width: 96px; padding: 5px 7px; }
+.weights input { width: 100%; max-width: 72px; padding: 5px 7px; }
 .wt-stat { display: flex; align-items: center; gap: 8px; font-weight: 600; white-space: nowrap; }
+.weights tr.off .wt-stat { opacity: 0.5; }
+.weights .wt-cell { width: 100%; }
+.weights td:nth-child(n + 3) input { width: 62px; }
+.wt-slider { --p: 0%; display: grid; grid-template-columns: minmax(80px, 1fr) 58px; gap: 8px; align-items: center; }
+.weights .wt-slider input { max-width: none; }
+.weights .wt-slider input[type='number'] { padding: 4px 6px; text-align: right; }
+.wt-slider input[type='range'] { -webkit-appearance: none; appearance: none; width: 100%; height: 22px; margin: 0; padding: 0; background: transparent; cursor: pointer; }
+.wt-slider input[type='range']:focus { box-shadow: none; }
+.wt-slider input[type='range']::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent-hi), var(--accent-deep)) 0 0 / var(--p) 100% no-repeat, #d5dbe5;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+.wt-slider input[type='range']::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent-hi), var(--accent-deep)) 0 0 / var(--p) 100% no-repeat, #d5dbe5;
+}
+.wt-slider input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--accent-deep);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  transition: transform 0.12s;
+}
+.wt-slider input[type='range']::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 2px solid var(--accent-deep); }
+.wt-slider input[type='range']:hover::-webkit-slider-thumb { transform: scale(1.15); }
+.wt-slider input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(246, 162, 26, 0.35); }
 .opt-options { display: flex; flex-direction: column; gap: 13px; }
 .opt-summary { padding: 10px 12px; border-radius: 3px; background: rgba(38, 50, 72, 0.05); color: var(--ink-2); }
 .opt-summary b { color: var(--accent-ink); font-family: var(--num); font-size: 16px; }

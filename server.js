@@ -1,8 +1,9 @@
 // SAO Gear Optimizer — local server (no dependencies).
 // Run: node server.js   (add --open to launch the browser)
 // Environment (all optional): PORT, HOST, DATA_DIR (where Items/ and Data/ live; seeded from the
-// app folder on first start), APP_PASSWORD (+ APP_USER) to require a login, REQUIRE_PASSWORD=1 to
-// refuse to start without one (set in the Docker image).
+// app folder on first start), ADMIN_PASSWORD (+ ADMIN_USER, default "admin") to require a login,
+// VIEWER_PASSWORD (+ VIEWER_USER, default "viewer") for a read-only login, REQUIRE_PASSWORD=1 to
+// refuse to start without an admin password (set in the Docker image).
 const http = require('http');
 const fs = require('fs');
 const fsp = fs.promises;
@@ -21,8 +22,14 @@ const SETS_DIR = path.join(DATA_ROOT, 'Items', 'Sets');
 const TEXTURES_DIR = path.join(ROOT, 'Textures');
 const DATA_DIR = path.join(DATA_ROOT, 'Data');
 const PROFILE_FILE = path.join(DATA_DIR, 'profile.json');
-const AUTH_USER = process.env.APP_USER || '';
-const AUTH_PASSWORD = process.env.APP_PASSWORD || '';
+// Logins: [role, user name, password]. Without an admin password there is no login and everyone is admin.
+const ACCOUNTS = [
+  ['admin', process.env.ADMIN_USER || 'admin', process.env.ADMIN_PASSWORD || ''],
+  ['viewer', process.env.VIEWER_USER || 'viewer', process.env.VIEWER_PASSWORD || ''],
+].filter(([, , password]) => password);
+const AUTH_ON = ACCOUNTS.some(([role]) => role === 'admin');
+const SESSION_COOKIE = 'sao_session';
+const SESSION_DAYS = 30;
 
 const MAX_BODY = 12 * 1024 * 1024;
 const ID_RE = /^[A-Za-z0-9][A-Za-z0-9 _.-]{0,100}$/;
@@ -70,20 +77,64 @@ async function ensureDirs() {
   for (const d of [ITEMS_DIR, IMAGES_DIR, SETS_DIR, DATA_DIR]) await fsp.mkdir(d, { recursive: true });
 }
 
+// ---------- logins / sessions ----------
 function sameSecret(a, b) {
   const hash = (s) => crypto.createHash('sha256').update(String(s)).digest();
   return crypto.timingSafeEqual(hash(a), hash(b));
 }
 
-function authorized(req) {
-  if (!AUTH_PASSWORD) return true;
-  const m = /^Basic\s+([A-Za-z0-9+/=]+)$/i.exec(req.headers.authorization || '');
-  if (!m) return false;
-  const decoded = Buffer.from(m[1], 'base64').toString('utf8');
-  const colon = decoded.indexOf(':');
-  if (colon < 0) return false;
-  const userOk = !AUTH_USER || sameSecret(decoded.slice(0, colon), AUTH_USER);
-  return sameSecret(decoded.slice(colon + 1), AUTH_PASSWORD) && userOk;
+// Sessions are signed with a random secret kept in the data folder, mixed with the passwords so that
+// changing a password logs everyone out.
+let sessionKey = null;
+async function loadSessionKey() {
+  const file = path.join(DATA_DIR, 'session-secret');
+  let secret = await fsp.readFile(file, 'utf8').catch(() => '');
+  if (!secret) {
+    secret = crypto.randomBytes(32).toString('hex');
+    await fsp.writeFile(file, secret, { mode: 0o600 });
+  }
+  sessionKey = crypto.createHmac('sha256', secret).update(ACCOUNTS.map((a) => a.join('\n')).join('\n')).digest();
+}
+
+const sign = (body) => crypto.createHmac('sha256', sessionKey).update(body).digest('base64url');
+
+function sessionRole(req) {
+  if (!AUTH_ON) return 'admin';
+  const m = new RegExp(`(?:^|;\\s*)${SESSION_COOKIE}=([^;]+)`).exec(req.headers.cookie || '');
+  const [role, exp, sig] = (m ? m[1] : '').split('.');
+  if (!sig || !ACCOUNTS.some(([r]) => r === role) || !(Number(exp) > Date.now())) return null;
+  return sameSecret(sig, sign(`${role}.${exp}`)) ? role : null;
+}
+
+function sessionCookie(req, value, maxAgeSec) {
+  const secure = String(req.headers['x-forwarded-proto'] || '').startsWith('https') ? '; Secure' : '';
+  return `${SESSION_COOKIE}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSec}${secure}`;
+}
+
+// Wrong passwords: after 10 failures from one address, wait 15 minutes.
+const loginFailures = new Map();
+const clientIp = (req) => String(req.headers['x-forwarded-for'] || '').split(',').pop().trim() || req.socket.remoteAddress;
+
+async function handleLogin(req, res) {
+  const ip = clientIp(req);
+  const fails = loginFailures.get(ip);
+  if (fails && fails.count >= 10 && fails.until > Date.now()) {
+    return send(res, 429, { error: 'Too many wrong passwords. Try again in a few minutes.' });
+  }
+  const body = await readBody(req);
+  const user = String(body.user || '').trim().toLowerCase();
+  // "&" (not "&&") so both comparisons always run
+  const account = ACCOUNTS.find(([, name, password]) => sameSecret(user, name.toLowerCase()) & sameSecret(body.password || '', password));
+  if (!account) {
+    const count = fails && fails.until > Date.now() ? fails.count + 1 : 1;
+    loginFailures.set(ip, { count, until: Date.now() + 15 * 60 * 1000 });
+    await new Promise((r) => setTimeout(r, 400));
+    return send(res, 401, { error: 'Wrong user name or password.' });
+  }
+  loginFailures.delete(ip);
+  const session = `${account[0]}.${Date.now() + SESSION_DAYS * 864e5}`;
+  res.setHeader('Set-Cookie', sessionCookie(req, `${session}.${sign(session)}`, SESSION_DAYS * 86400));
+  return send(res, 200, { role: account[0], user: account[1] });
 }
 
 async function writeJsonAtomic(file, obj) {
@@ -367,16 +418,26 @@ async function serveFile(res, baseDir, rel) {
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-  if (url.pathname === '/healthz') {
+  const p = url.pathname;
+  if (p === '/healthz') {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     return res.end('ok');
   }
-  if (!authorized(req)) {
-    res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="SAO Gear", charset="UTF-8"', 'Content-Type': 'text/plain' });
-    return res.end('Login required');
-  }
   try {
-    if (url.pathname.startsWith('/api/')) return await handleApi(req, res, url);
+    if (p === '/api/login' && req.method === 'POST') return await handleLogin(req, res);
+    if (p === '/api/logout' && req.method === 'POST') {
+      res.setHeader('Set-Cookie', sessionCookie(req, '', 0));
+      return send(res, 200, { ok: true });
+    }
+    if (p === '/login') return AUTH_ON ? await serveFile(res, PUBLIC_DIR, 'login.html') : redirect(res, '/');
+    const role = sessionRole(req);
+    if (!role && !p.startsWith('/css/')) {
+      if (p.startsWith('/api/') || req.method !== 'GET') return send(res, 401, { error: 'Login required' });
+      return redirect(res, '/login');
+    }
+    if (p === '/api/me') return send(res, 200, { role, auth: AUTH_ON, user: ACCOUNTS.find(([r]) => r === role)?.[1] || null });
+    if (role !== 'admin' && p.startsWith('/api/') && req.method !== 'GET') return send(res, 403, { error: 'This account is read-only.' });
+    if (p.startsWith('/api/')) return await handleApi(req, res, url);
     if (url.pathname.startsWith('/item-images/')) {
       return await serveFile(res, IMAGES_DIR, decodeURIComponent(url.pathname.slice('/item-images/'.length)));
     }
@@ -392,17 +453,23 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+function redirect(res, to) {
+  res.writeHead(302, { Location: to, 'Cache-Control': 'no-store' });
+  res.end();
+}
+
 function openBrowser(link) {
   const cmd = process.platform === 'win32' ? `start "" "${link}"` : process.platform === 'darwin' ? `open "${link}"` : `xdg-open "${link}"`;
   exec(cmd);
 }
 
-if (process.env.REQUIRE_PASSWORD === '1' && !AUTH_PASSWORD) {
-  console.error('APP_PASSWORD is not set. Set it (e.g. in Coolify > Environment Variables) and restart.');
+if (process.env.REQUIRE_PASSWORD === '1' && !AUTH_ON) {
+  console.error('ADMIN_PASSWORD is not set. Set it (e.g. in Coolify > Environment Variables) and restart.');
   process.exit(1);
 }
 
-ensureDirs().then(() => {
+ensureDirs().then(async () => {
+  if (AUTH_ON) await loadSessionKey();
   const link = `http://localhost:${PORT}`;
   server.on('error', (e) => {
     if (e.code === 'EADDRINUSE') {
@@ -420,7 +487,7 @@ ensureDirs().then(() => {
     console.log(`  Sets   -> ${SETS_DIR}`);
     console.log(`  Images -> ${IMAGES_DIR}`);
     console.log(`  Textures -> ${TEXTURES_DIR}`);
-    if (AUTH_PASSWORD) console.log('  Login required (APP_PASSWORD is set)');
+    if (AUTH_ON) console.log(`  Login required · accounts: ${ACCOUNTS.map(([role, user]) => `${user} (${role})`).join(', ')}`);
     console.log('  Press Ctrl+C to stop.');
     if (process.argv.includes('--open')) openBrowser(link);
   });
