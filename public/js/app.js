@@ -523,7 +523,7 @@ function buildOptPayload() {
   const types = new Set(slots.map((s) => s.type));
   const slim = (it) => ({ id: it.id, slot: it.slot, set: it.set || null, stats: it.stats || {} });
   const items = state.items
-    .filter((it) => types.has(it.slot) && (!o.onlyOwned || it.owned !== false) && (o.allowDuplicates || !fixedIds.has(it.id)))
+    .filter((it) => types.has(it.slot) && (!o.onlyOwned || it.owned !== false) && (!fixedIds.has(it.id) || (o.allowDuplicates && wornTwice(it.slot))))
     .map(slim);
   const occultIds = o.oneOccult ? state.items.filter(isOccult).map((it) => it.id) : [];
   return {
@@ -599,7 +599,7 @@ function renderOptimizer() {
           ${toggle('onlyOwned', 'Only use items I own', o.onlyOwned)}
           ${toggle('includeArmor', 'Also optimize armor &amp; offhand', o.includeArmor, 'When off, helmet/chest/legs/boots/offhand stay as currently equipped')}
           ${toggle('respectLocks', 'Keep locked slots as they are', o.respectLocks)}
-          ${toggle('allowDuplicates', 'Allow the same ring / artifact twice', o.allowDuplicates, 'Turn on if you own several copies of an item')}
+          ${toggle('allowDuplicates', 'Allow the same ring twice', o.allowDuplicates, 'Rings are the only items you can wear twice. Turn on if you own two copies of a ring.')}
           ${state.items.some(isOccult) ? toggle('oneOccult', 'Only one Occult item', o.oneOccult, 'Wearing 2+ Shadow Neophyte pieces costs 0.6/s health regen per piece and halves healing received') : ''}
           <label class="field inline-field"><span>Time limit (s)</span><input type="number" min="1" max="120" data-optnum="timeLimitSec" value="${esc(o.timeLimitSec)}"></label>
           <div class="opt-summary" id="opt-summary">${optSummary()}</div>
@@ -1453,12 +1453,34 @@ async function deleteSet(id) {
 }
 
 // ---- slot picker
+const wornTwice = (slotType) => !!SLOT_TYPES[slotType]?.duplicates;
+
+// Slot already holding this item: with another artifact etc. the two slots swap; a ring can sit in both ring slots.
+const swapSlotFor = (eq, slotId, itemId) =>
+  wornTwice(SLOT_MAP[slotId].type) ? null : SLOTS.find((s) => s.id !== slotId && eq[s.id] === itemId) || null;
+
 function equipItem(slotId, itemId) {
   const eq = state.profile.equipped;
-  const other = SLOTS.find((s) => s.id !== slotId && eq[s.id] === itemId);
-  if (other) eq[other.id] = eq[slotId] || null; // swap within rings / artifacts
+  const other = swapSlotFor(eq, slotId, itemId);
+  if (other) eq[other.id] = eq[slotId] || null;
   eq[slotId] = itemId;
   saveProfile();
+}
+
+// Only rings can be worn twice: clear repeats of any other item (the first slot keeps it). Returns how many were cleared.
+function dedupeEquipped(eq) {
+  const seen = new Set();
+  let cleared = 0;
+  for (const s of SLOTS) {
+    const id = eq[s.id];
+    if (!id) continue;
+    if (seen.has(id) && !wornTwice(s.type)) {
+      eq[s.id] = null;
+      cleared++;
+    }
+    seen.add(id);
+  }
+  return cleared;
 }
 
 function openSlotPicker(slotId) {
@@ -1494,13 +1516,14 @@ function openSlotPicker(slotId) {
       .filter((it) => !q || [it.name, it.effect, state.setsById[it.set]?.name].join(' ').toLowerCase().includes(q))
       .map((it) => {
         const next = { ...eq };
-        const other = SLOTS.find((s) => s.id !== slotId && next[s.id] === it.id);
+        const other = swapSlotFor(next, slotId, it.id);
         if (other) next[other.id] = eq[slotId] || null;
         next[slotId] = it.id;
+        const alsoIn = wornTwice(slot.type) ? SLOTS.find((s) => s.id !== slotId && eq[s.id] === it.id) : null;
         const b = currentBuild(next);
         const d = {};
         for (const k of STAT_KEYS) d[k] = b.total[k] - cur.total[k];
-        return { it, d, ds: scoreStats(b.total, o) - curScore, other };
+        return { it, d, ds: scoreStats(b.total, o) - curScore, other, alsoIn };
       })
       .sort((a, b) => b.ds - a.ds);
     if (!rows.length) {
@@ -1508,13 +1531,20 @@ function openSlotPicker(slotId) {
       return;
     }
     listEl.innerHTML = rows
-      .map(({ it, d, ds, other }) => {
+      .map(({ it, d, ds, other, alsoIn }) => {
         const isCur = eq[slotId] === it.id;
         const set = state.setsById[it.set];
+        const where = isCur
+          ? ' <span class="tag eq">equipped</span>'
+          : other
+            ? ` <span class="tag">in ${other.label} · swap</span>`
+            : alsoIn
+              ? ` <span class="tag">also in ${alsoIn.label}</span>`
+              : '';
         return `<button class="pick-row ${isCur ? 'current' : ''} ${it.owned === false ? 'not-owned' : ''}" data-pick="${esc(it.id)}" style="--r:${rarityOf(it).color}">
           <span class="pick-thumb">${thumb(it)}</span>
           <span class="pick-main">
-            <span class="pick-name">${esc(it.name)}${isCur ? ' <span class="tag eq">equipped</span>' : other ? ` <span class="tag">in ${other.label} · swap</span>` : ''}${set ? ` <span class="tag set">${esc(set.name)}</span>` : ''}${it.owned === false ? ' <span class="tag dim">not owned</span>' : ''}</span>
+            <span class="pick-name">${esc(it.name)}${where}${set ? ` <span class="tag set">${esc(set.name)}</span>` : ''}${it.owned === false ? ' <span class="tag dim">not owned</span>' : ''}</span>
             ${isCur ? statChips(it.stats) : statChips(d, { delta: true }) || '<span class="muted small">No stat change</span>'}
           </span>
           <span class="pick-score ${ds > 0.0001 ? 'pos' : ds < -0.0001 ? 'neg' : 'muted'}">${isCur ? '—' : `${ds >= 0 ? '+' : ''}${fmt(ds)}`}<small>score</small></span>
@@ -1583,6 +1613,7 @@ const ACTIONS = {
     const b = state.profile.builds[+el.dataset.index];
     if (!b) return;
     state.profile.equipped = { ...b.equipped };
+    dedupeEquipped(state.profile.equipped);
     saveProfile();
     render();
     toast(`Equipped “${b.name}”`);
@@ -1782,7 +1813,9 @@ async function loadData(announce = false) {
     state.paths = d.paths;
     state.errors = d.errors || [];
     state.loaded = true;
-    if (!d.profile) saveProfile();
+    const cleared = [state.profile.equipped, ...state.profile.builds.map((bd) => bd.equipped || {})].reduce((n, eq) => n + dedupeEquipped(eq), 0);
+    if (!d.profile || cleared) saveProfile();
+    if (cleared) toast(`Removed ${cleared} duplicate item${cleared > 1 ? 's' : ''} from your equipment and saved builds. Only rings can be worn twice.`, 'warn');
     render();
     if (announce) toast('Data reloaded from disk');
     if (state.errors.length) toast(`${state.errors.length} file(s) could not be read — see Base Stats › Data files`, 'warn');

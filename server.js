@@ -115,11 +115,14 @@ function sessionCookie(req, value, maxAgeSec) {
 const loginFailures = new Map();
 const clientIp = (req) => String(req.headers['x-forwarded-for'] || '').split(',').pop().trim() || req.socket.remoteAddress;
 
+// Answers JSON to the login page's script, or redirects when the form was posted without it.
 async function handleLogin(req, res) {
+  const isForm = /urlencoded/i.test(req.headers['content-type'] || '');
+  const fail = (status, error, code) => (isForm ? redirect(res, `/login?failed=${code}`) : send(res, status, { error }));
   const ip = clientIp(req);
   const fails = loginFailures.get(ip);
   if (fails && fails.count >= 10 && fails.until > Date.now()) {
-    return send(res, 429, { error: 'Too many wrong passwords. Try again in a few minutes.' });
+    return fail(429, 'Too many wrong passwords. Try again in a few minutes.', 'locked');
   }
   const body = await readBody(req);
   const user = String(body.user || '').trim().toLowerCase();
@@ -129,12 +132,12 @@ async function handleLogin(req, res) {
     const count = fails && fails.until > Date.now() ? fails.count + 1 : 1;
     loginFailures.set(ip, { count, until: Date.now() + 15 * 60 * 1000 });
     await new Promise((r) => setTimeout(r, 400));
-    return send(res, 401, { error: 'Wrong user name or password.' });
+    return fail(401, 'Wrong user name or password.', 'wrong');
   }
   loginFailures.delete(ip);
   const session = `${account[0]}.${Date.now() + SESSION_DAYS * 864e5}`;
   res.setHeader('Set-Cookie', sessionCookie(req, `${session}.${sign(session)}`, SESSION_DAYS * 86400));
-  return send(res, 200, { role: account[0], user: account[1] });
+  return isForm ? redirect(res, '/') : send(res, 200, { role: account[0], user: account[1] });
 }
 
 async function writeJsonAtomic(file, obj) {
@@ -201,6 +204,7 @@ function readBody(req) {
     req.on('end', () => {
       const text = Buffer.concat(chunks).toString('utf8');
       if (!text) return resolve({});
+      if (/urlencoded/i.test(req.headers['content-type'] || '')) return resolve(Object.fromEntries(new URLSearchParams(text)));
       try {
         resolve(JSON.parse(text));
       } catch {

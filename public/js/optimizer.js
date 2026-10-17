@@ -1,5 +1,5 @@
 // Gear optimizer — exact branch & bound search, runs inside a Web Worker.
-import { STAT_KEYS } from './data.js';
+import { STAT_KEYS, SLOT_TYPES } from './data.js';
 import { setBonusFor, num } from './calc.js';
 
 const NS = STAT_KEYS.length;
@@ -20,7 +20,7 @@ if (typeof self !== 'undefined' && typeof window === 'undefined' && typeof self.
 
 /**
  * payload: { base, fixed: [{slot, item}], slots: [{id, type}], items, sets,
- *            weights, mins, caps, allowDuplicates, topK, timeLimitMs,
+ *            weights, mins, caps, allowDuplicates (rings only), topK, timeLimitMs,
  *            limits: [{items: [itemId], max}] }   (at most `max` of those items in a build)
  */
 export function optimize(P, onProgress = () => {}) {
@@ -36,7 +36,8 @@ function search(P, useMins, onProgress) {
   const t0 = now();
   const timeLimit = P.timeLimitMs ?? 8000;
   const K = Math.max(1, P.topK ?? 5);
-  const allowDup = !!P.allowDuplicates;
+  // The same item may fill several slots of a group only for slot types that allow it (rings).
+  const dupType = (t) => !!P.allowDuplicates && !!SLOT_TYPES[t]?.duplicates;
 
   // ---- objective ----
   const W = new Float64Array(NS);
@@ -141,7 +142,7 @@ function search(P, useMins, onProgress) {
         return { item: it, v, set: setIndex.has(it.set) ? setIndex.get(it.set) : -1, lim, lin: lin(v) };
       });
     const before = list.length;
-    list = pruneDominated(list, allowDup ? 1 : m, dir);
+    list = pruneDominated(list, dupType(t) ? 1 : m, dir);
     pruned += before - list.length;
     candidateCount += list.length;
     list.sort((a, b) => b.lin - a.lin);
@@ -164,6 +165,7 @@ function search(P, useMins, onProgress) {
     return e;
   });
   const sameNext = order.map((s, i) => i + 1 < D && order[i + 1].type === s.type);
+  const dupAt = order.map((s) => dupType(s.type));
 
   // Static per-slot upper bounds. Candidates are sorted by value and picks inside a
   // group (rings, artifacts) are non-decreasing, so the k-th slot of a group can do
@@ -171,7 +173,7 @@ function search(P, useMins, onProgress) {
   const linSuffix = new Float64Array(D + 1);
   for (let d = D - 1; d >= 0; d--) {
     const list = cands[d];
-    const k = allowDup ? 0 : groupPos[d];
+    const k = dupAt[d] ? 0 : groupPos[d];
     linSuffix[d] = linSuffix[d + 1] + Math.max(list[Math.min(k, list.length - 1)].lin, 0);
   }
   const statMaxSuf = Array.from({ length: D + 1 }, () => new Float64Array(NS));
@@ -190,7 +192,7 @@ function search(P, useMins, onProgress) {
   }
   // Most pieces of each set that slots d.. can still hold: r open slots of a group can
   // take at most min(r, #set candidates) distinct pieces (or r copies with duplicates).
-  const piecesFit = (r, available) => (available <= 0 ? 0 : allowDup ? r : Math.min(r, available));
+  const piecesFit = (r, available, dup) => (available <= 0 ? 0 : dup ? r : Math.min(r, available));
   const fullGroupsFrom = Array.from({ length: D + 1 }, () => new Int32Array(NSET));
   for (let d = D - 1; d >= 0; d--) {
     if (groupPos[d] !== 0) {
@@ -199,13 +201,13 @@ function search(P, useMins, onProgress) {
     }
     const sc = typeSetCount[order[d].type];
     const e = groupEnd[d];
-    for (let s = 0; s < NSET; s++) fullGroupsFrom[d][s] = fullGroupsFrom[e][s] + piecesFit(e - d, sc[s]);
+    for (let s = 0; s < NSET; s++) fullGroupsFrom[d][s] = fullGroupsFrom[e][s] + piecesFit(e - d, sc[s], dupAt[d]);
   }
   const setRem = Array.from({ length: D + 1 }, () => new Int32Array(NSET));
   for (let d = 0; d < D; d++) {
     const sc = typeSetCount[order[d].type];
     const e = groupEnd[d];
-    for (let s = 0; s < NSET; s++) setRem[d][s] = fullGroupsFrom[e][s] + piecesFit(e - d, sc[s]);
+    for (let s = 0; s < NSET; s++) setRem[d][s] = fullGroupsFrom[e][s] + piecesFit(e - d, sc[s], dupAt[d]);
   }
   const relSets = [];
   for (let s = 0; s < NSET; s++) if (cnt0[s] > 0 || setRem[0][s] > 0) relSets.push(s);
@@ -252,7 +254,7 @@ function search(P, useMins, onProgress) {
     const last = list.length - 1;
     const e = groupEnd[d];
     const r = e - d;
-    if (allowDup) b += r * Math.max(list[Math.min(start, last)].lin, 0);
+    if (dupAt[d]) b += r * Math.max(list[Math.min(start, last)].lin, 0);
     else for (let j = 0; j < r; j++) b += Math.max(list[Math.min(start + j, last)].lin, 0);
     b += linSuffix[e];
     const rem = setRem[d];
@@ -315,7 +317,7 @@ function search(P, useMins, onProgress) {
         if (c.lim >= 0) limCnt[c.lim]++;
       }
       pick[d] = j;
-      const ns = next ? (c.item ? (allowDup ? j : j + 1) : last) : 0;
+      const ns = next ? (c.item ? (dupAt[d] ? j : j + 1) : last) : 0;
       dfs(d + 1, ns, curLin + c.lin);
       if (c.item) {
         for (let i = 0; i < NS; i++) cur[i] -= c.v[i];

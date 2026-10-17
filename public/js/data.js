@@ -36,7 +36,7 @@ export const SLOT_TYPES = {
   glove: { label: 'Glove', group: 'accessory' },
   amulet: { label: 'Amulet', group: 'accessory' },
   bracelet: { label: 'Bracelet', group: 'accessory' },
-  ring: { label: 'Ring', group: 'accessory' },
+  ring: { label: 'Ring', group: 'accessory', duplicates: true }, // the only item that can be worn twice
   artifact: { label: 'Artifact', group: 'accessory' },
   helmet: { label: 'Helmet', group: 'armor' },
   chestplate: { label: 'Chestplate', group: 'armor' },

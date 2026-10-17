@@ -35,7 +35,7 @@
       <section class="panel">
         <header class="panel-head"><span class="ph-diamond"></span><h2>Login</h2></header>
         <div class="panel-body">
-          <form id="login" autocomplete="on">
+          <form id="login" method="post" action="/api/login" autocomplete="on">
             <label class="field"><span>User name</span><input name="user" autocomplete="username" required autofocus></label>
             <label class="field"><span>Password</span><input name="password" type="password" autocomplete="current-password" required></label>
             <p class="login-error" id="error" role="alert"></p>
@@ -48,6 +48,12 @@
   <script>
     const form = document.getElementById('login');
     const error = document.getElementById('error');
+    // set when the form was posted before this script ran (the server redirects back here)
+    const failed = new URLSearchParams(location.search).get('failed');
+    if (failed) {
+      error.textContent = failed === 'locked' ? 'Too many wrong passwords. Try again in a few minutes.' : 'Wrong user name or password.';
+      history.replaceState(null, '', '/login');
+    }
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       error.textContent = '';
