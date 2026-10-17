@@ -12,13 +12,14 @@ You can also run `node server.js --open` (or `npm start`) from this folder.
 
 The repo deploys with Coolify's **Docker Compose** build pack, using [docker-compose.yaml](docker-compose.yaml).
 
-- **Data:** items, sets, images and the profile are stored in the `sao-gear-data` volume (`/data` in the container), so they survive redeploys. On the first start the volume is filled with the `Items/` and `Data/` folders from the repo. After that, the server's copy is the one that counts: edits made in the local app are not synced.
+- **Data:** items, sets and images are stored in the `sao-gear-data` volume (`/data` in the container), so they survive redeploys. On the first start the volume is filled with the `Items/` and `Data/` folders from the repo. After that, the server's copy is the one that counts: edits made in the local app are not synced.
+- **Player data:** each player's base stats, equipped gear, locks, saved builds, owned items and optimizer settings are saved in their own browser, not on the server. *Base Stats › Your data* has Export and Import buttons for backups or moving to another device. `Data/profile.json` is only used as the admin's starting profile the first time they open the app in a browser.
 - **Logins:** set these in Coolify's environment variables, then redeploy:
 
   | Variable | Login |
   |---|---|
   | `ADMIN_PASSWORD` (+ `ADMIN_USER`, default `admin`) | Admin: can change everything. Required; the container refuses to start without it. |
-  | `VIEWER_PASSWORD` (+ `VIEWER_USER`, default `viewer`) | Read-only: sees the items and sets and can use the equipment page and the optimizer, but can't change items or sets. Its base stats, equipped gear and optimizer settings are kept in its own browser. Leave it empty to turn this login off. |
+  | `VIEWER_PASSWORD` (+ `VIEWER_USER`, default `viewer`) | Read-only: sees the items and sets and can use the equipment page and the optimizer, but can't change items or sets. Leave it empty to turn this login off. |
 
   User names aren't case-sensitive. Logins last 30 days; changing a password logs everyone out. `/healthz` stays open for health checks.
 - **Textures:** they are part of the image. After running `node import-textures.js` locally, commit and push the `Textures/` folder and redeploy.
@@ -47,7 +48,7 @@ By default the optimizer fills only the accessory slots (glove, amulet, bracelet
 Items/Accessories/<id>.json     one file per item
 Items/Accessories/images/       item images (<id>.png …)
 Items/Sets/<id>.json            one file per set
-Data/profile.json               base stats, equipped items, locks, optimizer settings, saved builds
+Data/profile.json               the admin's starting profile (player profiles are saved in the browser)
 ```
 
 You can edit these files by hand, then press **Reload** in the app. The file name (without `.json`) is the item or set id.
@@ -60,7 +61,6 @@ You can edit these files by hand, then press **Reload** in the app. The file nam
   "slot": "ring",
   "set": "black-swordsman",
   "rarity": "rare",
-  "owned": true,
   "stats": { "dodge": 4, "moveSpeed": 5 },
   "effect": "Optional text, shown but not calculated",
   "notes": "",

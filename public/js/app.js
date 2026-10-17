@@ -22,8 +22,9 @@ function localGet(key) {
 function localSet(key, value) {
   try {
     localStorage.setItem(`saogear.${key}`, value);
+    return true;
   } catch {
-    /* storage unavailable */
+    return false; // storage unavailable
   }
 }
 
@@ -66,6 +67,7 @@ function defaultProfile() {
     baseStats: { ...DEFAULT_BASE_STATS },
     equipped: {},
     locked: {},
+    owned: {}, // { itemId: true } for the items this player owns
     optimizer: {
       preset: 'balanced',
       weights: { ...PRESETS.balanced.weights },
@@ -92,6 +94,7 @@ function normalizeProfile(p) {
     baseStats: { ...d.baseStats, ...(p.baseStats || {}) },
     equipped: { ...(p.equipped || {}) },
     locked: { ...(p.locked || {}) },
+    owned: { ...(p.owned || {}) },
     optimizer: {
       ...d.optimizer,
       ...o,
@@ -134,14 +137,23 @@ function upsert(list, obj) {
   indexData();
 }
 
-// The read-only login keeps its own profile (base stats, equipped, optimizer settings) in this browser.
+// Each player's profile (base stats, equipment, builds, owned items, optimizer settings) is saved in their own browser.
 let saveTimer = null;
+let storageWarned = false;
 function saveProfile() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    if (!canEdit()) return localSet('viewerProfile', JSON.stringify(state.profile));
-    api('PUT', '/api/profile', state.profile).catch((e) => toast(`Could not save profile: ${e.message}`, 'err'));
+    if (localSet('profile', JSON.stringify(state.profile)) || storageWarned) return;
+    storageWarned = true;
+    toast("This browser doesn't allow saving: your changes are lost when you close the page.", 'err');
   }, 350);
+}
+
+const isOwned = (item) => !!state.profile.owned[item.id];
+function setOwned(id, on) {
+  if (on) state.profile.owned[id] = true;
+  else delete state.profile.owned[id];
+  saveProfile();
 }
 
 const currentBuild = (equipped = state.profile.equipped) =>
@@ -195,7 +207,7 @@ function renderNav() {
 }
 
 function renderTopbar() {
-  const owned = state.items.filter((i) => i.owned !== false).length;
+  const owned = state.items.filter(isOwned).length;
   const errs = state.errors.length
     ? `<span class="tb-chip warn" title="${esc(state.errors.join('\n'))}">${uiIcon('info')} ${state.errors.length} unreadable file${state.errors.length > 1 ? 's' : ''}</span>`
     : '';
@@ -356,8 +368,8 @@ function filteredItems() {
     if (f.slot !== 'all' && it.slot !== f.slot) return false;
     if (f.set === 'none' && it.set) return false;
     if (f.set !== 'all' && f.set !== 'none' && it.set !== f.set) return false;
-    if (f.owned === 'owned' && it.owned === false) return false;
-    if (f.owned === 'missing' && it.owned !== false) return false;
+    if (f.owned === 'owned' && !isOwned(it)) return false;
+    if (f.owned === 'missing' && isOwned(it)) return false;
     if (q) {
       const hay = [it.name, it.effect, it.notes, state.setsById[it.set]?.name, SLOT_TYPES[it.slot]?.label, rarityOf(it).label]
         .join(' ')
@@ -383,20 +395,21 @@ function itemCard(it) {
   const val = linearValue(it.stats, state.profile.optimizer.weights);
   const where = SLOTS.filter((s) => state.profile.equipped[s.id] === it.id).map((s) => s.label);
   const id = esc(it.id);
-  return `<article class="item-card ${it.owned === false ? 'not-owned' : ''}" style="--r:${r.color}">
+  const owned = isOwned(it);
+  return `<article class="item-card ${owned ? '' : 'not-owned'}" style="--r:${r.color}">
     <div class="item-thumb">${thumb(it)}</div>
     <div class="item-main">
       <div class="item-top">
         <h3 class="item-name" title="${esc(it.name)}">${esc(it.name)}</h3>
         <span class="item-value" title="Value with the current optimizer weights">${fmt(val)}</span>
-        <button class="owned-toggle ${it.owned !== false ? 'on' : ''}" data-action="toggle-owned" data-id="${id}" title="${it.owned !== false ? 'Owned — click to mark as not owned' : 'Not owned — click to mark as owned'}">${uiIcon('check')}</button>
+        <button class="owned-toggle ${owned ? 'on' : ''}" data-action="toggle-owned" data-id="${id}" title="${owned ? 'Owned — click to mark as not owned' : 'Not owned — click to mark as owned'}">${uiIcon('check')}</button>
       </div>
       <div class="item-meta">
         <span class="tag">${SLOT_TYPES[it.slot]?.label || esc(it.slot || 'No slot')}</span>
         <span class="tag rarity">${r.label}</span>
         ${set ? `<span class="tag set">${esc(set.name)}</span>` : it.set ? '<span class="tag warn">missing set</span>' : ''}
         ${where.length ? `<span class="tag eq">Equipped · ${where.join(', ')}</span>` : ''}
-        ${it.owned === false ? '<span class="tag dim">not owned</span>' : ''}
+        ${owned ? '' : '<span class="tag dim">not owned</span>'}
       </div>
       ${statChips(it.stats) || '<span class="muted small">No stats</span>'}
       ${it.effect ? `<p class="effect">${esc(it.effect)}</p>` : ''}
@@ -523,7 +536,7 @@ function buildOptPayload() {
   const types = new Set(slots.map((s) => s.type));
   const slim = (it) => ({ id: it.id, slot: it.slot, set: it.set || null, stats: it.stats || {} });
   const items = state.items
-    .filter((it) => types.has(it.slot) && (!o.onlyOwned || it.owned !== false) && (!fixedIds.has(it.id) || (o.allowDuplicates && wornTwice(it.slot))))
+    .filter((it) => types.has(it.slot) && (!o.onlyOwned || isOwned(it)) && (!fixedIds.has(it.id) || (o.allowDuplicates && wornTwice(it.slot))))
     .map(slim);
   const occultIds = o.oneOccult ? state.items.filter(isOccult).map((it) => it.id) : [];
   return {
@@ -751,23 +764,36 @@ function renderProfile() {
         ).join('')}</div>
       </div>
     </section>
-    <section class="panel">
-      ${panelHead('Data files')}
-      <div class="panel-body">
-        <p class="hint">Everything is stored as plain JSON next to the app — you can edit, back up or share these folders. Press <b>Reload</b> after editing files by hand.</p>
-        ${
-          paths
-            ? `<dl class="paths">
-          <dt>Items</dt><dd><code>${esc(paths.items)}</code></dd>
-          <dt>Item images</dt><dd><code>${esc(paths.images)}</code></dd>
-          <dt>Textures</dt><dd><code>${esc(paths.textures)}</code></dd>
-          <dt>Sets</dt><dd><code>${esc(paths.sets)}</code></dd>
-          <dt>Profile</dt><dd><code>${esc(paths.profile)}</code></dd></dl>`
-            : ''
-        }
-        ${state.errors.length ? `<div class="warn-line">Could not read:<br>${state.errors.map(esc).join('<br>')}</div>` : ''}
-      </div>
-    </section>
+    <div class="col-stack">
+      <section class="panel">
+        ${panelHead('Your data')}
+        <div class="panel-body">
+          <p class="hint">Your base stats, equipped gear, locks, saved builds, owned items and optimizer settings are saved
+            <b>in this browser only</b>, so every player has their own. Export them to keep a backup or to move them to another device or browser.
+            Clearing this site's data in the browser deletes them.</p>
+          <div class="btn-row">
+            <button class="btn" data-action="export-profile">${uiIcon('save')} Export</button>
+            <button class="btn" data-action="import-profile">${uiIcon('copy')} Import…</button>
+          </div>
+        </div>
+      </section>
+      <section class="panel admin-only">
+        ${panelHead('Data files')}
+        <div class="panel-body">
+          <p class="hint">Items and sets are shared by everyone and stored as plain JSON files. Press <b>Reload</b> after editing them by hand.</p>
+          ${
+            paths
+              ? `<dl class="paths">
+            <dt>Items</dt><dd><code>${esc(paths.items)}</code></dd>
+            <dt>Item images</dt><dd><code>${esc(paths.images)}</code></dd>
+            <dt>Textures</dt><dd><code>${esc(paths.textures)}</code></dd>
+            <dt>Sets</dt><dd><code>${esc(paths.sets)}</code></dd></dl>`
+              : ''
+          }
+          ${state.errors.length ? `<div class="warn-line">Could not read:<br>${state.errors.map(esc).join('<br>')}</div>` : ''}
+        </div>
+      </section>
+    </div>
   </div>`;
 }
 
@@ -1075,7 +1101,7 @@ function setOptions(selected) {
 function openItemEditor(item, preset = {}) {
   const isNew = !item?.id;
   const draft = item
-    ? structuredClone(item)
+    ? { ...structuredClone(item), owned: isOwned(item) }
     : { name: '', slot: preset.slot || 'ring', set: preset.set || null, rarity: preset.rarity || 'common', owned: true, stats: {}, effect: '', notes: '' };
   let imageData; // undefined = keep, string = new image, null = remove
   let texture = draft.texture || null; // "pack/name" when the image came from the texture picker
@@ -1213,7 +1239,6 @@ function openItemEditor(item, preset = {}) {
       slot: F.slot.value,
       rarity: F.rarity.value,
       set: F.set.value || null,
-      owned: F.owned.checked,
       stats: {},
       effect: F.effect.value.trim(),
       notes: F.notes.value.trim(),
@@ -1229,6 +1254,7 @@ function openItemEditor(item, preset = {}) {
     try {
       const saved = isNew ? await api('POST', '/api/items', data) : await api('PUT', `/api/items/${encodeURIComponent(item.id)}`, data);
       upsert(state.items, saved);
+      setOwned(saved.id, F.owned.checked); // owned is per player, kept in the browser
       toast(`Saved “${saved.name}”`);
       closeModal(entry);
       render();
@@ -1259,7 +1285,8 @@ async function deleteItem(id) {
     await api('DELETE', `/api/items/${encodeURIComponent(id)}`);
     state.items = state.items.filter((x) => x.id !== id);
     indexData();
-    let touched = false;
+    let touched = id in state.profile.owned;
+    delete state.profile.owned[id];
     for (const s of SLOTS) {
       if (state.profile.equipped[s.id] === id) {
         state.profile.equipped[s.id] = null;
@@ -1512,7 +1539,7 @@ function openSlotPicker(slotId) {
     const curScore = scoreStats(cur.total, o);
     const rows = state.items
       .filter((it) => it.slot === slot.type)
-      .filter((it) => !ownedOnly || it.owned !== false)
+      .filter((it) => !ownedOnly || isOwned(it))
       .filter((it) => !q || [it.name, it.effect, state.setsById[it.set]?.name].join(' ').toLowerCase().includes(q))
       .map((it) => {
         const next = { ...eq };
@@ -1541,10 +1568,10 @@ function openSlotPicker(slotId) {
             : alsoIn
               ? ` <span class="tag">also in ${alsoIn.label}</span>`
               : '';
-        return `<button class="pick-row ${isCur ? 'current' : ''} ${it.owned === false ? 'not-owned' : ''}" data-pick="${esc(it.id)}" style="--r:${rarityOf(it).color}">
+        return `<button class="pick-row ${isCur ? 'current' : ''} ${isOwned(it) ? '' : 'not-owned'}" data-pick="${esc(it.id)}" style="--r:${rarityOf(it).color}">
           <span class="pick-thumb">${thumb(it)}</span>
           <span class="pick-main">
-            <span class="pick-name">${esc(it.name)}${where}${set ? ` <span class="tag set">${esc(set.name)}</span>` : ''}${it.owned === false ? ' <span class="tag dim">not owned</span>' : ''}</span>
+            <span class="pick-name">${esc(it.name)}${where}${set ? ` <span class="tag set">${esc(set.name)}</span>` : ''}${isOwned(it) ? '' : ' <span class="tag dim">not owned</span>'}</span>
             ${isCur ? statChips(it.stats) : statChips(d, { delta: true }) || '<span class="muted small">No stat change</span>'}
           </span>
           <span class="pick-score ${ds > 0.0001 ? 'pos' : ds < -0.0001 ? 'neg' : 'muted'}">${isCur ? '—' : `${ds >= 0 ? '+' : ''}${fmt(ds)}`}<small>score</small></span>
@@ -1646,23 +1673,18 @@ const ACTIONS = {
     F.slot.dispatchEvent(new Event('change'));
     F.rarity.value = copy.rarity || 'common';
     F.set.value = copy.set || '';
-    F.owned.checked = copy.owned !== false;
+    F.owned.checked = isOwned(it);
     F.effect.value = copy.effect || '';
     F.notes.value = copy.notes || '';
     for (const k of STAT_KEYS) F[`stat:${k}`].value = copy.stats?.[k] ?? '';
   },
   'delete-item': (el) => deleteItem(el.dataset.id),
-  'toggle-owned': async (el) => {
+  'toggle-owned': (el) => {
     const it = state.itemsById[el.dataset.id];
     if (!it) return;
-    try {
-      const saved = await api('PUT', `/api/items/${encodeURIComponent(it.id)}`, { ...it, owned: it.owned === false });
-      upsert(state.items, saved);
-      refreshItemList();
-      renderTopbar();
-    } catch (e) {
-      toast(`Save failed: ${e.message}`, 'err');
-    }
+    setOwned(it.id, !isOwned(it));
+    refreshItemList();
+    renderTopbar();
   },
   'equip-item': (el) => {
     const it = state.itemsById[el.dataset.id];
@@ -1697,6 +1719,35 @@ const ACTIONS = {
     await fetch('/api/logout', { method: 'POST' }).catch(() => {});
     location.href = '/login';
   },
+  'export-profile': () => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(state.profile, null, 2)], { type: 'application/json' }));
+    a.download = `sao-gear-profile-${new Date().toLocaleDateString('sv')}.json`; // local YYYY-MM-DD
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  },
+  'import-profile': () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json,.json';
+    input.addEventListener('change', async () => {
+      if (!input.files[0]) return;
+      try {
+        const p = JSON.parse(await input.files[0].text());
+        if (!p || typeof p !== 'object' || !(p.baseStats || p.equipped || p.optimizer)) throw new Error('this is not a SAO Gear profile file');
+        const msg = 'Replace your base stats, equipment, saved builds, owned items and optimizer settings with the ones in this file?';
+        if (!(await confirmDialog('Import profile', msg))) return;
+        state.profile = normalizeProfile(p);
+        for (const eq of [state.profile.equipped, ...state.profile.builds.map((bd) => bd.equipped || {})]) dedupeEquipped(eq);
+        saveProfile();
+        render();
+        toast('Profile imported');
+      } catch (e) {
+        toast(`Import failed: ${e.message}`, 'err');
+      }
+    });
+    input.click();
+  },
   'equip-result': (el) => {
     const res = state.opt.result?.results[+el.dataset.index];
     if (!res) return;
@@ -1708,7 +1759,7 @@ const ACTIONS = {
 };
 
 // Actions that change items or sets on the server.
-const ADMIN_ACTIONS = new Set(['new-item', 'new-item-in-set', 'edit-item', 'dup-item', 'delete-item', 'toggle-owned', 'new-set', 'edit-set', 'delete-set']);
+const ADMIN_ACTIONS = new Set(['new-item', 'new-item-in-set', 'edit-item', 'dup-item', 'delete-item', 'new-set', 'edit-set', 'delete-set']);
 
 document.addEventListener('click', (e) => {
   const nav = e.target.closest('[data-nav]');
@@ -1801,20 +1852,24 @@ async function loadData(announce = false) {
     state.items = d.items || [];
     state.sets = d.sets || [];
     indexData();
-    let profile = d.profile;
-    if (!canEdit()) {
-      try {
-        profile = JSON.parse(localGet('viewerProfile')) || profile;
-      } catch {
-        /* keep the shared profile */
-      }
+    // The profile lives in this browser. First visit: the admin starts from the profile the server used to keep
+    // (with the items that were marked as owned), a read-only player from the copy their browser already had.
+    let profile = null;
+    try {
+      profile = JSON.parse(localGet('profile') || (canEdit() ? 'null' : localGet('viewerProfile')) || 'null');
+    } catch {
+      /* unreadable: start over */
+    }
+    const firstVisit = !profile;
+    if (firstVisit && canEdit() && d.profile) {
+      profile = { ...d.profile, owned: Object.fromEntries(state.items.filter((it) => it.owned === true).map((it) => [it.id, true])) };
     }
     state.profile = normalizeProfile(profile);
     state.paths = d.paths;
     state.errors = d.errors || [];
     state.loaded = true;
     const cleared = [state.profile.equipped, ...state.profile.builds.map((bd) => bd.equipped || {})].reduce((n, eq) => n + dedupeEquipped(eq), 0);
-    if (!d.profile || cleared) saveProfile();
+    if (firstVisit || cleared) saveProfile();
     if (cleared) toast(`Removed ${cleared} duplicate item${cleared > 1 ? 's' : ''} from your equipment and saved builds. Only rings can be worn twice.`, 'warn');
     render();
     if (announce) toast('Data reloaded from disk');

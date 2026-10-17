@@ -132,7 +132,6 @@ code { font: 12.5px/1.4 Consolas, 'Cascadia Mono', monospace; background: rgba(3
 
 /* read-only login: hide everything that edits items or sets */
 body.read-only .admin-only { display: none !important; }
-body.read-only .owned-toggle { pointer-events: none; }
 
 /* ---------- layout + SAO round menu ---------- */
 .app { display: grid; grid-template-columns: 108px minmax(0, 1fr); }

@@ -263,7 +263,6 @@ function cleanItem(body) {
     slot: String(body.slot || ''),
     set: body.set ? String(body.set) : null,
     rarity: body.rarity ? String(body.rarity) : 'common',
-    owned: body.owned !== false,
     stats: {},
     effect: body.effect ? String(body.effect) : '',
     notes: body.notes ? String(body.notes) : '',
@@ -335,7 +334,7 @@ function cleanSet(body) {
 }
 
 // ---------- API ----------
-async function handleApi(req, res, url) {
+async function handleApi(req, res, url, role) {
   const parts = url.pathname.split('/').filter(Boolean).map(decodeURIComponent); // ['api', ...]
   const [, kind, id] = parts;
   const method = req.method;
@@ -343,29 +342,26 @@ async function handleApi(req, res, url) {
   if (kind === 'data' && method === 'GET') {
     const [items, sets] = await Promise.all([readJsonDir(ITEMS_DIR), readJsonDir(SETS_DIR)]);
     await Promise.all(items.list.map(decorateItem));
+    // Profiles are kept in each player's browser; Data/profile.json is only the admin's starting point.
     let profile = null;
-    try {
-      profile = await readJson(PROFILE_FILE);
-    } catch (e) {
-      if (e.code !== 'ENOENT') items.errors.push(`Data/profile.json: ${e.message}`);
+    if (role === 'admin') {
+      try {
+        profile = await readJson(PROFILE_FILE);
+      } catch (e) {
+        if (e.code !== 'ENOENT') items.errors.push(`Data/profile.json: ${e.message}`);
+      }
     }
     return send(res, 200, {
       items: items.list,
       sets: sets.list,
       profile,
       errors: [...items.errors, ...sets.errors],
-      paths: { items: ITEMS_DIR, images: IMAGES_DIR, textures: TEXTURES_DIR, sets: SETS_DIR, profile: PROFILE_FILE },
+      paths: { items: ITEMS_DIR, images: IMAGES_DIR, textures: TEXTURES_DIR, sets: SETS_DIR },
     });
   }
 
   if (kind === 'textures' && method === 'GET') {
     return send(res, 200, { packs: await listTextures() });
-  }
-
-  if (kind === 'profile' && method === 'PUT') {
-    const body = await readBody(req);
-    await writeJsonAtomic(PROFILE_FILE, body);
-    return send(res, 200, { ok: true });
   }
 
   if (kind === 'items' || kind === 'sets') {
@@ -441,7 +437,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (p === '/api/me') return send(res, 200, { role, auth: AUTH_ON, user: ACCOUNTS.find(([r]) => r === role)?.[1] || null });
     if (role !== 'admin' && p.startsWith('/api/') && req.method !== 'GET') return send(res, 403, { error: 'This account is read-only.' });
-    if (p.startsWith('/api/')) return await handleApi(req, res, url);
+    if (p.startsWith('/api/')) return await handleApi(req, res, url, role);
     if (url.pathname.startsWith('/item-images/')) {
       return await serveFile(res, IMAGES_DIR, decodeURIComponent(url.pathname.slice('/item-images/'.length)));
     }
