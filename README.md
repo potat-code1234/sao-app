@@ -13,7 +13,7 @@ You can also run `node server.js --open` (or `npm start`) from this folder.
 The repo deploys with Coolify's **Docker Compose** build pack, using [docker-compose.yaml](docker-compose.yaml).
 
 - **Data:** items, sets, images and the profile are stored in the `sao-gear-data` volume (`/data` in the container), so they survive redeploys. On the first start the volume is filled with the `Items/` and `Data/` folders from the repo. After that, the server's copy is the one that counts: edits made in the local app are not synced.
-- **Login:** set `APP_PASSWORD` in Coolify's environment variables, and optionally `APP_USER`. The browser then asks for them. `/healthz` stays open for health checks.
+- **Login:** set `APP_PASSWORD` in Coolify's environment variables, and optionally `APP_USER` (when it's empty, any user name works). The browser then asks for them. The container refuses to start without a password. `/healthz` stays open for health checks.
 - **Textures:** they are part of the image. After running `node import-textures.js` locally, commit and push the `Textures/` folder and redeploy.
 
 Without Coolify: `APP_PASSWORD=… docker compose up -d --build`, then open port 3077 of the container (add a `ports:` mapping or put a reverse proxy in front).

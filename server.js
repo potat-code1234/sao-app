@@ -1,7 +1,8 @@
 // SAO Gear Optimizer — local server (no dependencies).
 // Run: node server.js   (add --open to launch the browser)
 // Environment (all optional): PORT, HOST, DATA_DIR (where Items/ and Data/ live; seeded from the
-// app folder on first start), APP_PASSWORD (+ APP_USER) to require a login.
+// app folder on first start), APP_PASSWORD (+ APP_USER) to require a login, REQUIRE_PASSWORD=1 to
+// refuse to start without one (set in the Docker image).
 const http = require('http');
 const fs = require('fs');
 const fsp = fs.promises;
@@ -394,6 +395,11 @@ const server = http.createServer(async (req, res) => {
 function openBrowser(link) {
   const cmd = process.platform === 'win32' ? `start "" "${link}"` : process.platform === 'darwin' ? `open "${link}"` : `xdg-open "${link}"`;
   exec(cmd);
+}
+
+if (process.env.REQUIRE_PASSWORD === '1' && !AUTH_PASSWORD) {
+  console.error('APP_PASSWORD is not set. Set it (e.g. in Coolify > Environment Variables) and restart.');
+  process.exit(1);
 }
 
 ensureDirs().then(() => {

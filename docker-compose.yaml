@@ -5,8 +5,8 @@ services:
     build: .
     restart: unless-stopped
     environment:
-      - APP_USER=${APP_USER:-}
-      - APP_PASSWORD=${APP_PASSWORD:?set APP_PASSWORD in Coolify}
+      - APP_USER=${APP_USER}
+      - APP_PASSWORD=${APP_PASSWORD}
     volumes:
       - sao-gear-data:/data
     expose:

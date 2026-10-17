@@ -4,7 +4,8 @@ WORKDIR /app
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     PORT=3077 \
-    DATA_DIR=/data
+    DATA_DIR=/data \
+    REQUIRE_PASSWORD=1
 
 COPY package.json server.js ./
 COPY public ./public
