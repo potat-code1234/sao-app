@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAO Gear Optimizer</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1l11 11-11 11L1 12z' fill='%23f6a21a'/%3E%3Cpath d='M12 6l6 6-6 6-6-6z' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="bg" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark"></span>
+      <div>
+        <div class="brand-title">SAO GEAR</div>
+        <div class="brand-sub">Equipment optimizer</div>
+      </div>
+    </div>
+    <div class="topbar-status" id="topbar-status"></div>
+    <button class="btn" data-action="reload" title="Re-read all JSON files from disk">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 8a7.5 7.5 0 1 0 1 6M19.5 3.5V8.5h-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Reload
+    </button>
+  </header>
+
+  <div class="app">
+    <nav class="sao-nav" id="nav" aria-label="Main menu"></nav>
+    <main id="view" class="view"><div class="boot">Linking…</div></main>
+  </div>
+
+  <div id="modal-root"></div>
+  <div id="toast-root" aria-live="polite"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

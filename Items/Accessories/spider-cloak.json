@@ -1,0 +1,15 @@
+{
+  "name": "Spider Cloak",
+  "slot": "artifact",
+  "set": "spider-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "attackDamage": 0.5,
+    "dodge": 1
+  },
+  "effect": "",
+  "notes": "Level 6 · recipe: Spider Cloth x12, Spider Thread x8, Col x33",
+  "texture": "nerfs/manteau_tissu_araignee",
+  "image": "spider-cloak.png"
+}

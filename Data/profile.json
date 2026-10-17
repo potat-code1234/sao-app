@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "baseStats": {
+    "health": 0,
+    "attackDamage": 0,
+    "defense": 0,
+    "projectileDamage": 0,
+    "mana": 0,
+    "attackSpeed": 0,
+    "critChance": 0,
+    "critDamage": 0,
+    "cooldownReduction": 0,
+    "moveSpeed": 0,
+    "bonusHealing": 0,
+    "skillDamage": 0,
+    "dodge": 0,
+    "damageReduction": 0,
+    "magicDamage": 0,
+    "tenacity": 0,
+    "physicalDamage": 0,
+    "skillCritChance": 0,
+    "skillCritDamage": 0,
+    "lifeSteal": 0,
+    "spellVampirism": 0,
+    "maxStamina": 0,
+    "healthRegen": 0,
+    "manaRegen": 0,
+    "staminaRegen": 0
+  },
+  "equipped": {},
+  "locked": {},
+  "optimizer": {
+    "preset": "ranged",
+    "weights": {
+      "health": 0.1,
+      "projectileDamage": 1,
+      "attackSpeed": 0.6,
+      "critChance": 0.8,
+      "critDamage": 0.2,
+      "cooldownReduction": 0.3,
+      "moveSpeed": 0.2,
+      "skillDamage": 0.4,
+      "dodge": 0.2,
+      "physicalDamage": 0.4,
+      "maxStamina": 0.1,
+      "staminaRegen": 0.5
+    },
+    "mins": {},
+    "caps": {
+      "critChance": 100
+    },
+    "onlyOwned": false,
+    "includeArmor": false,
+    "allowDuplicates": true,
+    "respectLocks": false,
+    "timeLimitSec": 8
+  },
+  "builds": []
+}

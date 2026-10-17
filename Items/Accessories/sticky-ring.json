@@ -1,0 +1,14 @@
+{
+  "name": "Sticky Ring",
+  "slot": "ring",
+  "set": "little-slime-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "defense": 1,
+    "health": 2,
+    "bonusHealing": 1
+  },
+  "effect": "",
+  "notes": "Level 5 · no recipe"
+}

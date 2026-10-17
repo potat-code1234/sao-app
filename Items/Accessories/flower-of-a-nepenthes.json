@@ -1,0 +1,16 @@
+{
+  "name": "Flower of a Nepenthes",
+  "slot": "artifact",
+  "set": "nepenthes-set",
+  "rarity": "epic",
+  "owned": false,
+  "stats": {
+    "health": 2,
+    "mana": 0.5,
+    "magicDamage": 2.5
+  },
+  "effect": "",
+  "notes": "",
+  "texture": "nerfs/fleur_nephente",
+  "image": "flower-of-a-nepenthes.png"
+}

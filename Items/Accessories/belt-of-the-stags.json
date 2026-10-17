@@ -1,0 +1,16 @@
+{
+  "name": "Belt of the Stags",
+  "slot": "artifact",
+  "set": "peaceful-deer-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "health": 2,
+    "cooldownReduction": 5,
+    "bonusHealing": 0.5
+  },
+  "effect": "",
+  "notes": "Level 7 · no recipe",
+  "texture": "nerfs/ceinture_cerfs",
+  "image": "belt-of-the-stags.png"
+}

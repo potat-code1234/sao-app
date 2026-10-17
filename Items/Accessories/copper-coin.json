@@ -1,0 +1,14 @@
+{
+  "name": "Copper Coin",
+  "slot": "artifact",
+  "set": "copper-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "attackDamage": 0.25,
+    "health": 0.5,
+    "bonusHealing": 0.5
+  },
+  "effect": "",
+  "notes": "Level 3 · recipe: Copper Ingot x1, Col x25"
+}

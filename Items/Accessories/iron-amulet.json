@@ -1,0 +1,16 @@
+{
+  "name": "Iron Amulet",
+  "slot": "amulet",
+  "set": "iron-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "health": 1,
+    "mana": 1,
+    "maxStamina": 1
+  },
+  "effect": "",
+  "notes": "Level 5 · recipe: Iron Ingot x1, Iron String x1, Col x30",
+  "texture": "nerfs/amulette_fer",
+  "image": "iron-amulet.png"
+}

@@ -1,0 +1,10 @@
+{
+  "name": "sao-gear-optimizer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local gear/accessory optimizer for an SAO-style Minecraft MMORPG",
+  "scripts": {
+    "start": "node server.js --open",
+    "import-textures": "node import-textures.js"
+  }
+}

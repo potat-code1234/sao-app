@@ -1,0 +1,13 @@
+{
+  "name": "Frozen Gloves",
+  "slot": "glove",
+  "set": "ice-golem-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "defense": 2,
+    "health": 3
+  },
+  "effect": "",
+  "notes": "Level 7 · recipe: Hard Glacial Hide x12, Col x30"
+}

@@ -1,0 +1,14 @@
+{
+  "name": "Iron Coin",
+  "slot": "artifact",
+  "set": "iron-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "attackDamage": 0.5,
+    "health": 1,
+    "bonusHealing": 1
+  },
+  "effect": "",
+  "notes": "Level 5 · recipe: Iron Ingot x1, Col x30"
+}

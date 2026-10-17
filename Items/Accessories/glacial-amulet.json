@@ -1,0 +1,14 @@
+{
+  "name": "Glacial Amulet",
+  "slot": "amulet",
+  "set": "ice-spirits-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "mana": 1.5
+  },
+  "effect": "",
+  "notes": "Level 7 · recipe: Glacial Magic Shard x12, Birch String x1, Col x33",
+  "texture": "nerfs/amulette_glacial",
+  "image": "glacial-amulet.png"
+}

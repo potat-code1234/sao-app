@@ -1,0 +1,16 @@
+{
+  "name": "Ring of Pumba",
+  "slot": "ring",
+  "set": "corrupted-boar-set",
+  "rarity": "legendary",
+  "owned": false,
+  "stats": {
+    "health": 1,
+    "attackDamage": 1,
+    "critChance": 1
+  },
+  "effect": "",
+  "notes": "",
+  "image": "ring-of-pumba.png",
+  "texture": "nerfs/anneau_pumba"
+}

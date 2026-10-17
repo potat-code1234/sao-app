@@ -1,0 +1,18 @@
+{
+  "name": "Skeleton Skull",
+  "slot": "artifact",
+  "set": "standard-skeleton-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "health": 5,
+    "mana": 1,
+    "skillDamage": 1,
+    "maxStamina": 1,
+    "healthRegen": 0.05
+  },
+  "effect": "",
+  "notes": "Level 8 · recipe: Reinforced Skeleton Bone x20, Col x35",
+  "texture": "nerfs/crane_squelette",
+  "image": "skeleton-skull.png"
+}

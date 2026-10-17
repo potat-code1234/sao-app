@@ -1,0 +1,14 @@
+{
+  "name": "Bracelet of the Stags",
+  "slot": "bracelet",
+  "set": "peaceful-deer-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "bonusHealing": 1.5
+  },
+  "effect": "",
+  "notes": "Level 7 · recipe: Mountain Stag Hide x12, Col x33",
+  "texture": "nerfs/bracelet_cerfs",
+  "image": "bracelet-of-the-stags.png"
+}

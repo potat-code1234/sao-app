@@ -1,0 +1,13 @@
+{
+  "name": "Elite Gloves",
+  "slot": "glove",
+  "set": "elite-treant-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "attackDamage": 0.25,
+    "critDamage": 1
+  },
+  "effect": "",
+  "notes": "Level 3 · recipe: Wolf Fur x8, Col x25"
+}

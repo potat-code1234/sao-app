@@ -1,0 +1,14 @@
+{
+  "name": "Ring of the Nepenthes",
+  "slot": "ring",
+  "set": "nepenthes-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "mana": 1
+  },
+  "effect": "",
+  "notes": "Level 5 · recipe: Leaf Fragments x8, Corrupted Spore x8, Col x25",
+  "texture": "nerfs/anneau_nephente",
+  "image": "ring-of-the-nepenthes.png"
+}

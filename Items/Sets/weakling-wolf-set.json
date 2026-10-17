@@ -1,0 +1,28 @@
+{
+  "name": "Weakling Wolf Set",
+  "cumulative": true,
+  "bonuses": [
+    {
+      "pieces": 2,
+      "stats": {
+        "critDamage": 0.5
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 3,
+      "stats": {
+        "moveSpeed": 5
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 4,
+      "stats": {
+        "attackDamage": 0.25
+      },
+      "effect": ""
+    }
+  ],
+  "notes": ""
+}

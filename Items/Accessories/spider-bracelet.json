@@ -1,0 +1,15 @@
+{
+  "name": "Spider Bracelet",
+  "slot": "bracelet",
+  "set": "spider-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "health": 2,
+    "dodge": 1
+  },
+  "effect": "",
+  "notes": "Level 6 · recipe: Spider Cloth x8, Corrupted Spore x8, Col x30",
+  "texture": "nerfs/bracelet_tissu_araignee",
+  "image": "spider-bracelet.png"
+}

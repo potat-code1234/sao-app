@@ -1,0 +1,28 @@
+{
+  "name": "Shark Set",
+  "cumulative": true,
+  "bonuses": [
+    {
+      "pieces": 2,
+      "stats": {
+        "cooldownReduction": 5
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 3,
+      "stats": {
+        "health": 3
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 4,
+      "stats": {
+        "physicalDamage": 3
+      },
+      "effect": ""
+    }
+  ],
+  "notes": ""
+}

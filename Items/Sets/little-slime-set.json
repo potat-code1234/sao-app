@@ -1,0 +1,30 @@
+{
+  "name": "Little Slime Set",
+  "cumulative": true,
+  "bonuses": [
+    {
+      "pieces": 2,
+      "stats": {
+        "health": 2
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 3,
+      "stats": {
+        "healthRegen": 0.05,
+        "manaRegen": 0.05,
+        "staminaRegen": 0.05
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 4,
+      "stats": {
+        "cooldownReduction": 5
+      },
+      "effect": ""
+    }
+  ],
+  "notes": ""
+}

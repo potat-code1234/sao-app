@@ -1,0 +1,16 @@
+{
+  "name": "Copper Ring",
+  "slot": "ring",
+  "set": "copper-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "health": 0.5,
+    "critChance": 0.5,
+    "skillCritChance": 0.5
+  },
+  "effect": "",
+  "notes": "Level 3 · recipe: Copper Ingot x1, Col x25",
+  "texture": "mctrinketsringsvol1/copper_ring1",
+  "image": "copper-ring.png"
+}

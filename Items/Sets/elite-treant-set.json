@@ -1,0 +1,28 @@
+{
+  "name": "Elite Treant Set",
+  "cumulative": true,
+  "bonuses": [
+    {
+      "pieces": 2,
+      "stats": {
+        "critChance": 0.5
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 3,
+      "stats": {
+        "moveSpeed": 2
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 4,
+      "stats": {
+        "projectileDamage": 5
+      },
+      "effect": ""
+    }
+  ],
+  "notes": ""
+}

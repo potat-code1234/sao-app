@@ -1,0 +1,17 @@
+{
+  "name": "Harpy set",
+  "cumulative": true,
+  "bonuses": [
+    {
+      "pieces": 2,
+      "stats": {},
+      "effect": ""
+    },
+    {
+      "pieces": 4,
+      "stats": {},
+      "effect": ""
+    }
+  ],
+  "notes": ""
+}

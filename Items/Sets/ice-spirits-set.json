@@ -1,0 +1,28 @@
+{
+  "name": "Ice Spirits Set",
+  "cumulative": true,
+  "bonuses": [
+    {
+      "pieces": 2,
+      "stats": {
+        "skillCritChance": 1.5
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 3,
+      "stats": {
+        "mana": 1
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 4,
+      "stats": {
+        "magicDamage": 3
+      },
+      "effect": ""
+    }
+  ],
+  "notes": ""
+}

@@ -1,0 +1,15 @@
+{
+  "name": "Bracelet of the Nepenthes",
+  "slot": "bracelet",
+  "set": "nepenthes-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "defense": 2,
+    "skillDamage": 1
+  },
+  "effect": "",
+  "notes": "Level 5 · recipe: Leaf Fragments x12, Col x28",
+  "texture": "nerfs/bracelet_nephente",
+  "image": "bracelet-of-the-nepenthes.png"
+}

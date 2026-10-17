@@ -1,0 +1,15 @@
+{
+  "name": "Bracelet of Ice",
+  "slot": "bracelet",
+  "set": "ice-golem-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "health": 2,
+    "cooldownReduction": 2,
+    "skillDamage": 2,
+    "damageReduction": 2
+  },
+  "effect": "",
+  "notes": "Level 8 · recipe: Fragment of the Bear's Soul x3, Hard Glacial Hide x24, Col x45"
+}

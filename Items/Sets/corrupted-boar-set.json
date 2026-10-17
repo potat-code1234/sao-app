@@ -1,0 +1,28 @@
+{
+  "name": "Corrupted Boar Set",
+  "cumulative": true,
+  "bonuses": [
+    {
+      "pieces": 2,
+      "stats": {
+        "attackDamage": 0.25
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 3,
+      "stats": {
+        "health": 2
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 4,
+      "stats": {
+        "attackDamage": 0.25
+      },
+      "effect": ""
+    }
+  ],
+  "notes": ""
+}

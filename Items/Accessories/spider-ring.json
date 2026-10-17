@@ -1,0 +1,15 @@
+{
+  "name": "Spider Ring",
+  "slot": "ring",
+  "set": "spider-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "critDamage": 2,
+    "dodge": 1
+  },
+  "effect": "",
+  "notes": "Level 6 · recipe: Spider Cloth x8, Coal Ore x8, Col x30",
+  "texture": "nerfs/anneau_tissu_araignee",
+  "image": "spider-ring.png"
+}

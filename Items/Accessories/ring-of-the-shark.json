@@ -1,0 +1,12 @@
+{
+  "name": "Ring of the Shark",
+  "slot": "ring",
+  "set": "shark-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "physicalDamage": 2
+  },
+  "effect": "",
+  "notes": "Level 7 · recipe: Shark Carapace x8, Col x30"
+}

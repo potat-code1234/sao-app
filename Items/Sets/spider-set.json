@@ -1,0 +1,36 @@
+{
+  "name": "Spider Set",
+  "cumulative": true,
+  "bonuses": [
+    {
+      "pieces": 2,
+      "stats": {
+        "moveSpeed": 2.5
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 3,
+      "stats": {
+        "attackSpeed": 0.025
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 4,
+      "stats": {
+        "dodge": 2.5
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 5,
+      "stats": {
+        "attackDamage": 0.25,
+        "critChance": 1
+      },
+      "effect": ""
+    }
+  ],
+  "notes": ""
+}

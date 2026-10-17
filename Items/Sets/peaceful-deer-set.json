@@ -1,0 +1,21 @@
+{
+  "name": "Peaceful Deer Set",
+  "cumulative": true,
+  "bonuses": [
+    {
+      "pieces": 2,
+      "stats": {
+        "bonusHealing": 1
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 3,
+      "stats": {
+        "mana": 2
+      },
+      "effect": ""
+    }
+  ],
+  "notes": ""
+}

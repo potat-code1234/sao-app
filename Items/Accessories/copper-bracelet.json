@@ -1,0 +1,14 @@
+{
+  "name": "Copper Bracelet",
+  "slot": "bracelet",
+  "set": "copper-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "critDamage": 0.5,
+    "skillCritDamage": 0.5,
+    "health": 0.5
+  },
+  "effect": "",
+  "notes": "Level 3 · recipe: Copper Ingot x1, Col x25"
+}

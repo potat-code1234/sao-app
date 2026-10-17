@@ -1,0 +1,12 @@
+{
+  "name": "Glacial Antenna",
+  "slot": "artifact",
+  "set": "ice-spirits-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "skillDamage": 2
+  },
+  "effect": "",
+  "notes": "Level 7 · recipe: Glacial Magic Shard x16, Col x33"
+}

@@ -1,0 +1,28 @@
+{
+  "name": "Standard Skeleton Set",
+  "cumulative": true,
+  "bonuses": [
+    {
+      "pieces": 2,
+      "stats": {
+        "cooldownReduction": 5
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 3,
+      "stats": {
+        "healthRegen": 0.05
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 4,
+      "stats": {
+        "damageReduction": -2
+      },
+      "effect": ""
+    }
+  ],
+  "notes": ""
+}

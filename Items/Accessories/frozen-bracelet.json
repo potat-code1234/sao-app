@@ -1,0 +1,16 @@
+{
+  "name": "Frozen Bracelet",
+  "slot": "bracelet",
+  "set": "ice-golem-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "health": 1,
+    "defense": 2,
+    "maxStamina": 1
+  },
+  "effect": "",
+  "notes": "Level 7 · recipe: Hard Glacial Hide x16, Col x33",
+  "texture": "mctrinketsringsvol1/cyan_ring9",
+  "image": "frozen-bracelet.png"
+}

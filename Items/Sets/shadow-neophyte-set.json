@@ -1,0 +1,49 @@
+{
+  "name": "Shadow Neophyte Set",
+  "cumulative": true,
+  "bonuses": [
+    {
+      "pieces": 2,
+      "stats": {
+        "healthRegen": -0.6
+      },
+      "effect": "-50% Healing Received"
+    },
+    {
+      "pieces": 3,
+      "stats": {
+        "healthRegen": -0.6
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 4,
+      "stats": {
+        "healthRegen": -0.6
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 5,
+      "stats": {
+        "healthRegen": -0.6
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 6,
+      "stats": {
+        "healthRegen": -0.6
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 7,
+      "stats": {
+        "healthRegen": -0.6
+      },
+      "effect": ""
+    }
+  ],
+  "notes": ""
+}

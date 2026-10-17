@@ -1,0 +1,16 @@
+{
+  "name": "Ring of the Leviathan",
+  "slot": "ring",
+  "set": "shark-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "health": 5,
+    "attackDamage": 1,
+    "defense": 3
+  },
+  "effect": "",
+  "notes": "Level 7 · recipe: Shark Carapace x24, Heart of Nymbrea x3, Iron Ingot x1, Col x55",
+  "texture": "nerfs/anneau_leviathan",
+  "image": "ring-of-the-leviathan.png"
+}

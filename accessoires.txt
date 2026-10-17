@@ -1,0 +1,1488 @@
+Copper Amulet
+Level
+3
+
+Set
+Copper Set
+
+Description
+A copper amulet, simple and easy to wear, ideal for beginners
+
+Statistics
+Health
++0.5
+Max Mana
++0.5
+Max Stamina
++0.5
+2 Piece Set Bonus
++2.5% Movement Speed
+3 Piece Set Bonus
++0.05/s Health Regeneration, +0.05/s Mana Regeneration, +0.05/s Stamina Regeneration
+4 Piece Set Bonus
++1% Magic Damage, +1% Physical Damage, +1% Projectile Damage
+5 Piece Set Bonus
++1 Health, +1 Defense
+Resources
+Copper Ingot
+x1
+Copper String
+x1
+Col
+x25
+Copper Bracelet
+Level
+3
+
+Set
+Copper Set
+
+Description
+A simple copper bracelet, forged on the first floor, modest but reliable
+
+Statistics
+Critical Damage
++0.5%
+Skill Critical Damage
++0.5%
+Health
++0.5
+2 Piece Set Bonus
++2.5% Movement Speed
+3 Piece Set Bonus
++0.05/s Health Regeneration, +0.05/s Mana Regeneration, +0.05/s Stamina Regeneration
+4 Piece Set Bonus
++1% Magic Damage, +1% Physical Damage, +1% Projectile Damage
+5 Piece Set Bonus
++1 Health, +1 Defense
+Resources
+Copper Ingot
+x1
+Col
+x25
+Copper Coin
+Level
+3
+
+Set
+Copper Set
+
+Description
+A struck copper disc, crafted on the first floor, humble but well forged
+
+Statistics
+Attack Damage
++0.25
+Health
++0.5
+Bonus Healing
++0.5
+2 Piece Set Bonus
++2.5% Movement Speed
+3 Piece Set Bonus
++0.05/s Health Regeneration, +0.05/s Mana Regeneration, +0.05/s Stamina Regeneration
+4 Piece Set Bonus
++1% Magic Damage, +1% Physical Damage, +1% Projectile Damage
+5 Piece Set Bonus
++1 Health, +1 Defense
+Resources
+Copper Ingot
+x1
+Col
+x25
+Copper Gloves
+Level
+3
+
+Set
+Copper Set
+
+Description
+Gloves of hammered copper, with warm reflections, solid without being heavy
+
+Statistics
+Defense
++1
+Health
++0.5
+2 Piece Set Bonus
++2.5% Movement Speed
+3 Piece Set Bonus
++0.05/s Health Regeneration, +0.05/s Mana Regeneration, +0.05/s Stamina Regeneration
+4 Piece Set Bonus
++1% Magic Damage, +1% Physical Damage, +1% Projectile Damage
+5 Piece Set Bonus
++1 Health, +1 Defense
+Resources
+Copper Ingot
+x1
+Col
+x25
+Copper Ring
+Level
+3
+
+Set
+Copper Set
+
+Description
+A ring of polished copper, light and conductive, the foundation of any adventurer
+
+Statistics
+Critical Hit Chance
++0.5%
+Skill Critical Hit Chance
++0.5%
+Health
++0.5
+2 Piece Set Bonus
++2.5% Movement Speed
+3 Piece Set Bonus
++0.05/s Health Regeneration, +0.05/s Mana Regeneration, +0.05/s Stamina Regeneration
+4 Piece Set Bonus
++1% Magic Damage, +1% Physical Damage, +1% Projectile Damage
+5 Piece Set Bonus
++1 Health, +1 Defense
+Resources
+Copper Ingot
+x1
+Col
+x25
+Elite Amulet
+Level
+3
+
+Set
+Elite Treant Set
+
+Description
+An amulet of gnarled wood, taken from an elite Treant, it sustains your effort
+
+Statistics
+Max Stamina
++0.5
+2 Piece Set Bonus
++0.5% Critical Hit Chance
+3 Piece Set Bonus
++2% Movement Speed
+4 Piece Set Bonus
++5% Projectile Damage
+Resources
+Oak String
+x1
+Sylvan Bark
+x8
+Col
+x25
+Elite Bracelet
+Level
+3
+
+Set
+Elite Treant Set
+
+Description
+A bracelet of lively brambles, from an elite Treant; it sharpens precision
+
+Statistics
+Critical Hit Chance
++1%
+2 Piece Set Bonus
++0.5% Critical Hit Chance
+3 Piece Set Bonus
++2% Movement Speed
+4 Piece Set Bonus
++5% Projectile Damage
+Resources
+Oak Log
+x4
+Titan Bark
+x4
+Sylvan Bark
+x8
+Col
+x28
+Elite Carapace
+Level
+3
+
+Set
+Elite Treant Set
+
+Description
+A shard of bark from an elite Treant, hard as a carapace, it toughens its bearer
+
+Statistics
+Attack Damage
++0.5
+Health
++2
+2 Piece Set Bonus
++0.5% Critical Hit Chance
+3 Piece Set Bonus
++2% Movement Speed
+4 Piece Set Bonus
++5% Projectile Damage
+Resources
+Titan Bark
+x8
+Sylvan Bark
+x8
+Sylve Sprout
+x8
+Col
+x28
+Elite Gloves
+Level
+3
+
+Set
+Elite Treant Set
+
+Description
+Gloves sheathed in bark, cut from an elite Treant, they strike sharper
+
+Statistics
+Attack Damage
++0.25
+Critical Damage
++1%
+2 Piece Set Bonus
++0.5% Critical Hit Chance
+3 Piece Set Bonus
++2% Movement Speed
+4 Piece Set Bonus
++5% Projectile Damage
+Resources
+Wolf Fur
+x8
+Col
+x25
+Gelatinous Amulet
+Level
+4
+
+Set
+Little Slime Set
+
+Description
+An iron amulet melted with a slime essence, slimy to the touch
+
+Statistics
+Bonus Healing
++0.5
+2 Piece Set Bonus
++2 Health
+3 Piece Set Bonus
++0.05/s Health Regeneration, +0.05/s Mana Regeneration, +0.05/s Stamina Regeneration
+4 Piece Set Bonus
++5% Cooldown Reduction
+Resources
+Oak String
+x1
+Slime Jelly
+x8
+Col
+x25
+Gelatinous Bracelet
+Level
+4
+
+Set
+Little Slime Set
+
+Description
+A band of iron gelled by a slime essence, supple and regenerating
+
+Statistics
+Health
++1
+Health Regeneration
++0.05/s
+Mana Regeneration
++0.05/s
+Stamina Regeneration
++0.05/s
+2 Piece Set Bonus
++2 Health
+3 Piece Set Bonus
++0.05/s Health Regeneration, +0.05/s Mana Regeneration, +0.05/s Stamina Regeneration
+4 Piece Set Bonus
++5% Cooldown Reduction
+Resources
+Slime Jelly
+x12
+Slime Core
+x4
+Col
+x28
+Slimy Ring
+Level
+4
+
+Set
+Little Slime Set
+
+Description
+A ring of alloy and jelly, slimy yet solid between the fingers
+
+Statistics
+Health
++1
+Max Mana
++0.5
+Max Stamina
++0.5
+2 Piece Set Bonus
++2 Health
+3 Piece Set Bonus
++0.05/s Health Regeneration, +0.05/s Mana Regeneration, +0.05/s Stamina Regeneration
+4 Piece Set Bonus
++5% Cooldown Reduction
+Resources
+Slime Jelly
+x8
+Col
+x25
+Amulet of the Nepenthes
+Level
+5
+
+Set
+Nepenthes Set
+
+Description
+An amulet brimming with sap, it sharpens magic and regenerates mana
+
+Statistics
+Skill Critical Damage
++2%
+Mana Regeneration
++0.1/s
+2 Piece Set Bonus
++1% Skill Critical Hit Chance
+3 Piece Set Bonus
++0.5 Max Mana
+4 Piece Set Bonus
++2.5% Magic Damage
+Resources
+Leaf Fragments
+x4
+Corrupted Spore
+x4
+Oak String
+x1
+Col
+x25
+Bracelet of the Nepenthes
+Level
+5
+
+Set
+Nepenthes Set
+
+Description
+Woven from carnivorous vines, it strengthens the spells and the guard of its wearer
+
+Statistics
+Skill Damage
++1%
+Defense
++2
+2 Piece Set Bonus
++1% Skill Critical Hit Chance
+3 Piece Set Bonus
++0.5 Max Mana
+4 Piece Set Bonus
++2.5% Magic Damage
+Resources
+Leaf Fragments
+x12
+Col
+x28
+Gloves of the Wolves
+Level
+5
+
+Set
+Weakling Wolf Set
+
+Crafted At
+Secret Accessory Blacksmith
+
+Description
+A pair of gloves in wolf hide, with a baleful aura that inspires bloodlust
+
+Statistics
+Critical Chance
++1%
+Life Steal
++2.5%
+Movement Speed
++5%
+2 Piece Set Bonus
++0.5% Critical Power
+3 Piece Set Bonus
++5% Movement Speed
+4 Piece Set Bonus
++0.25 Attack Damage
+Iron Amulet
+Level
+5
+
+Set
+Iron Set
+
+Description
+A rudimentary amulet, forged from raw iron. Nothing magical, just sheer sturdiness
+
+Statistics
+Health
++1
+Max Mana
++1
+Max Stamina
++1
+2 Piece Set Bonus
++3% Movement Speed
+3 Piece Set Bonus
++0.1/s Health Regeneration, +0.1/s Mana Regeneration, +0.1/s Stamina Regeneration
+4 Piece Set Bonus
++2% Magic Damage, +2% Physical Damage, +2% Projectile Damage
+5 Piece Set Bonus
++2 Health, +2 Defense
+Resources
+Iron Ingot
+x1
+Iron String
+x1
+Col
+x30
+Iron Bracelet
+Level
+5
+
+Set
+Iron Set
+
+Description
+A simple band of iron, forged to protect the wrist or complete a rudimentary set
+
+Statistics
+Critical Damage
++1%
+Skill Critical Damage
++1%
+Health
++1
+2 Piece Set Bonus
++3% Movement Speed
+3 Piece Set Bonus
++0.1/s Health Regeneration, +0.1/s Mana Regeneration, +0.1/s Stamina Regeneration
+4 Piece Set Bonus
++2% Magic Damage, +2% Physical Damage, +2% Projectile Damage
+5 Piece Set Bonus
++2 Health, +2 Defense
+Resources
+Iron Ingot
+x1
+Col
+x30
+Iron Coin
+Level
+5
+
+Set
+Iron Set
+
+Description
+A simple piece of ancient iron, forged on floor 1.
+
+Statistics
+Attack Damage
++0.5
+Health
++1
+Bonus Healing
++1
+2 Piece Set Bonus
++3% Movement Speed
+3 Piece Set Bonus
++0.1/s Health Regeneration, +0.1/s Mana Regeneration, +0.1/s Stamina Regeneration
+4 Piece Set Bonus
++2% Magic Damage, +2% Physical Damage, +2% Projectile Damage
+5 Piece Set Bonus
++2 Health, +2 Defense
+Resources
+Iron Ingot
+x1
+Col
+x30
+Iron Gloves
+Level
+5
+
+Set
+Iron Set
+
+Description
+A pair of gloves in polished iron, with cold reflections and a solidly forged look
+
+Statistics
+Defense
++1.5
+Health
++1
+2 Piece Set Bonus
++3% Movement Speed
+3 Piece Set Bonus
++0.1/s Health Regeneration, +0.1/s Mana Regeneration, +0.1/s Stamina Regeneration
+4 Piece Set Bonus
++2% Magic Damage, +2% Physical Damage, +2% Projectile Damage
+5 Piece Set Bonus
++2 Health, +2 Defense
+Resources
+Iron Ingot
+x1
+Col
+x30
+Iron Ring
+Level
+5
+
+Set
+Iron Set
+
+Description
+Cut from raw iron, this ring is valued for its sturdiness more than its appearance
+
+Statistics
+Critical Hit Chance
++1%
+Skill Critical Hit Chance
++1%
+Health
++1
+2 Piece Set Bonus
++3% Movement Speed
+3 Piece Set Bonus
++0.1/s Health Regeneration, +0.1/s Mana Regeneration, +0.1/s Stamina Regeneration
+4 Piece Set Bonus
++2% Magic Damage, +2% Physical Damage, +2% Projectile Damage
+5 Piece Set Bonus
++2 Health, +2 Defense
+Resources
+Iron Ingot
+x1
+Col
+x30
+Ring of the Nepenthes
+Level
+5
+
+Set
+Nepenthes Set
+
+Description
+A ring girded with carnivorous petals, nourished by the mana of a voracious flower.
+
+Statistics
+Max Mana
++1
+2 Piece Set Bonus
++1% Skill Critical Hit Chance
+3 Piece Set Bonus
++0.5 Max Mana
+4 Piece Set Bonus
++2.5% Magic Damage
+Resources
+Leaf Fragments
+x8
+Corrupted Spore
+x8
+Col
+x25
+Sticky Ring
+Level
+5
+
+Set
+Little Slime Set
+
+Description
+A ring coated in a slimy layer; hardly elegant, but surprising
+
+Statistics
+Defense
++1
+Health
++2
+Bonus Healing
++1
+2 Piece Set Bonus
++2 Health
+3 Piece Set Bonus
++0.05/s Health Regeneration, +0.05/s Mana Regeneration, +0.05/s Stamina Regeneration
+4 Piece Set Bonus
++5% Cooldown Reduction
+Resources
+N/A
+
+Spider Bracelet
+Level
+6
+
+Set
+Spider Set
+
+Description
+Woven from spider silk and steeped in corrupted spores
+
+Statistics
+Dodge
++1%
+Health
++2
+2 Piece Set Bonus
++2.5% Movement Speed
+3 Piece Set Bonus
++0.025 Attack Speed
+4 Piece Set Bonus
++2.5% Dodge Chance
+5 Piece Set Bonus
++0.25 Attack Damage, +1% Critical Hit Chance
+Resources
+Spider Cloth
+x8
+Corrupted Spore
+x8
+Col
+x30
+Spider Cloak
+Level
+6
+
+Set
+Spider Set
+
+Description
+A cloak woven from spider silk, resistant and supple, it protects without hindering
+
+Statistics
+Attack Damage
++0.5
+Dodge
++1%
+2 Piece Set Bonus
++2.5% Movement Speed
+3 Piece Set Bonus
++0.025 Attack Speed
+4 Piece Set Bonus
++2.5% Dodge Chance
+5 Piece Set Bonus
++0.25 Attack Damage, +1% Critical Hit Chance
+Resources
+Spider Cloth
+x12
+Spider Thread
+x8
+Col
+x33
+Spider Gloves
+Level
+6
+
+Set
+Spider Set
+
+Description
+Clad gloves of chitin, they strike with the fury of a starving spider
+
+Statistics
+Critical Damage
++2%
+Dodge
++0.5%
+2 Piece Set Bonus
++2.5% Movement Speed
+3 Piece Set Bonus
++0.025 Attack Speed
+4 Piece Set Bonus
++2.5% Dodge Chance
+5 Piece Set Bonus
++0.25 Attack Damage, +1% Critical Hit Chance
+Resources
+Spider Cloth
+x8
+Spider Thread
+x8
+Col
+x30
+Spider Ring
+Level
+6
+
+Set
+Spider Set
+
+Description
+A ring of hardened silk, light as a thread, it makes movements more elusive
+
+Statistics
+Critical Damage
++2%
+Dodge
++1%
+2 Piece Set Bonus
++2.5% Movement Speed
+3 Piece Set Bonus
++0.025 Attack Speed
+4 Piece Set Bonus
++2.5% Dodge Chance
+5 Piece Set Bonus
++0.25 Attack Damage, +1% Critical Hit Chance
+Resources
+Spider Cloth
+x8
+Coal Ore
+x8
+Col
+x30
+Belt of the Stags
+Level
+7
+
+Set
+Peaceful Deer Set
+
+Description
+A belt made from stag hides
+
+Statistics
+Ability Haste
++5%
+Health
++2
+Bonus Healing
++0.5
+2 Piece Set Bonus
++1 Bonus Healing
+3 Piece Set Bonus
++2 Max Mana
+Resources
+N/A
+
+Bracelet of the Shark
+Level
+7
+
+Set
+Shark Set
+
+Description
+A bracelet of shark skin, sturdy and greedy, it returns life stolen from enemies
+
+Statistics
+Life Steal
++3%
+Health
++3
+2 Piece Set Bonus
++5% Ability Haste
+3 Piece Set Bonus
++3 Health
+4 Piece Set Bonus
++3% Physical Damage
+Resources
+Shark Carapace
+x12
+Iron Ingot
+x1
+Col
+x33
+Bracelet of the Stags
+Level
+7
+
+Set
+Peaceful Deer Set
+
+Description
+A bracelet made from stag hides
+
+Statistics
+Bonus Healing
++1.5
+2 Piece Set Bonus
++1 Bonus Healing
+3 Piece Set Bonus
++2 Max Mana
+Resources
+Mountain Stag Hide
+x12
+Col
+x33
+Frozen Amulet
+Level
+7
+
+Set
+Ice Golem Set
+
+Description
+An amulet of eternal ice, it exudes a cold that slowly mends flesh
+
+Statistics
+Max Stamina
++1
+Health Regeneration
++0.1/s
+2 Piece Set Bonus
++5 Health
+3 Piece Set Bonus
++3% Ability Haste, +0.1/s Health Regeneration
+4 Piece Set Bonus
++1 Defense, +2 Health, +2% Skill Damage
+Resources
+Hard Glacial Hide
+x8
+Birch String
+x1
+Col
+x30
+Frozen Bracelet
+Level
+7
+
+Set
+Ice Golem Set
+
+Description
+A bracelet of dense ice, carved from the golem, it hardens the guard
+
+Statistics
+Defense
++2
+Health
++1
+Max Stamina
++1
+2 Piece Set Bonus
++5 Health
+3 Piece Set Bonus
++3% Ability Haste, +0.1/s Health Regeneration
+4 Piece Set Bonus
++1 Defense, +2 Health, +2% Skill Damage
+Resources
+Hard Glacial Hide
+x16
+Col
+x33
+Frozen Gloves
+Level
+7
+
+Set
+Ice Golem Set
+
+Description
+Gloves of compact frost, torn from the ice golem, they freeze the slightest wound
+
+Statistics
+Defense
++2
+Health
++3
+2 Piece Set Bonus
++5 Health
+3 Piece Set Bonus
++3% Ability Haste, +0.1/s Health Regeneration
+4 Piece Set Bonus
++1 Defense, +2 Health, +2% Skill Damage
+Resources
+Hard Glacial Hide
+x12
+Col
+x30
+Frozen Ring
+Level
+7
+
+Set
+Ice Golem Set
+
+Description
+A ring set with a frozen gleam, hard as pack ice, it wards off the heaviest blows
+
+Statistics
+Health
++5
+2 Piece Set Bonus
++5 Health
+3 Piece Set Bonus
++3% Ability Haste, +0.1/s Health Regeneration
+4 Piece Set Bonus
++1 Defense, +2 Health, +2% Skill Damage
+Resources
+Hard Glacial Hide
+x12
+Frost Dust
+x8
+Col
+x33
+Glacial Amulet
+Level
+7
+
+Set
+Ice Spirits Set
+
+Description
+An amulet inhabited by a spirit of ice; it swells the mana reserve
+
+Statistics
+Max Mana
++1.5
+2 Piece Set Bonus
++1.5% Skill Critical Hit Chance
+3 Piece Set Bonus
++1 Max Mana
+4 Piece Set Bonus
++3% Magic Damage
+Resources
+Glacial Magic Shard
+x12
+Birch String
+x1
+Col
+x33
+Glacial Antenna
+Level
+7
+
+Set
+Ice Spirits Set
+
+Description
+An antenna of crystalline frost, catching the whispers of the ice spirits
+
+Statistics
+Skill Damage
++2%
+2 Piece Set Bonus
++1.5% Skill Critical Hit Chance
+3 Piece Set Bonus
++1 Max Mana
+4 Piece Set Bonus
++3% Magic Damage
+Resources
+Glacial Magic Shard
+x16
+Col
+x33
+Glacial Essence
+Level
+7
+
+Set
+Ice Spirits Set
+
+Description
+The pure essence of an ice spirit, condensed into a shard that radiates magic
+
+Statistics
+Magic Damage
++3%
+Health
++3
+Max Mana
++1
+2 Piece Set Bonus
++1.5% Skill Critical Hit Chance
+3 Piece Set Bonus
++1 Max Mana
+4 Piece Set Bonus
++3% Magic Damage
+Resources
+Frost Dust
+x32
+Col
+x40
+Glacial Ring
+Level
+7
+
+Set
+Ice Spirits Set
+
+Description
+A ring of frozen spirit, it sharpens magic and circulates mana
+
+Statistics
+Skill Critical Damage
++3%
+Defense
++1
+Mana Regeneration
++0.1/s
+2 Piece Set Bonus
++1.5% Skill Critical Hit Chance
+3 Piece Set Bonus
++1 Max Mana
+4 Piece Set Bonus
++3% Magic Damage
+Resources
+Glacial Magic Shard
+x12
+Frost Dust
+x8
+Col
+x33
+Gloves of the Stags
+Level
+7
+
+Set
+Peaceful Deer Set
+
+Description
+Gloves made from stag hides
+
+Statistics
+Mana Regeneration
++0.2/s
+Bonus Healing
++0.5
+2 Piece Set Bonus
++1 Bonus Healing
+3 Piece Set Bonus
++2 Max Mana
+Resources
+Mountain Stag Hide
+x12
+Col
+x33
+Ring of the Leviathan
+Level
+7
+
+Set
+Shark Set
+
+Description
+A ring forged in the abyss, marked with the seal of the Leviathan; it inspires power and dread
+
+Statistics
+Attack Damage
++1
+Defense
++3
+Health
++5
+2 Piece Set Bonus
++5% Ability Haste
+3 Piece Set Bonus
++3 Health
+4 Piece Set Bonus
++3% Physical Damage
+Resources
+Shark Carapace
+x24
+Heart of Nymbrea
+x3
+Iron Ingot
+x1
+Col
+x55
+Ring of the Shark
+Level
+7
+
+Set
+Shark Set
+
+Description
+A ring adorned with a shark's tooth, sharp and voracious, it inflicts physical blows
+
+Statistics
+Physical Damage
++2%
+2 Piece Set Bonus
++5% Ability Haste
+3 Piece Set Bonus
++3 Health
+4 Piece Set Bonus
++3% Physical Damage
+Resources
+Shark Carapace
+x8
+Col
+x30
+Shark Amulet
+Level
+7
+
+Set
+Shark Set
+
+Description
+An amulet of shark teeth, a raw trophy of a hunter from the deep abyss
+
+Statistics
+Attack Damage
++0.75
+2 Piece Set Bonus
++5% Ability Haste
+3 Piece Set Bonus
++3 Health
+4 Piece Set Bonus
++3% Physical Damage
+Resources
+Shark Carapace
+x8
+Birch String
+x1
+Col
+x30
+Shark Fang
+Level
+7
+
+Set
+Shark Set
+
+Description
+A still-sharp shark fang, a trophy of a predator of the abyss, it bites as hard as its master
+
+Statistics
+Attack Damage
++1
+2 Piece Set Bonus
++5% Ability Haste
+3 Piece Set Bonus
++3 Health
+4 Piece Set Bonus
++3% Physical Damage
+Resources
+Shark Carapace
+x12
+Wolf Fangs
+x8
+Col
+x33
+Bracelet of Ice
+Level
+8
+
+Set
+Ice Golem Set
+
+Description
+Carved from a frozen crystal, it retains the eternal cold of the ice golem
+
+Statistics
+Skill Damage
++2%
+Ability Haste
++2%
+Damage Reduction
++2%
+Health
++2
+2 Piece Set Bonus
++5 Health
+3 Piece Set Bonus
++3% Ability Haste, +0.1/s Health Regeneration
+4 Piece Set Bonus
++1 Defense, +2 Health, +2% Skill Damage
+Resources
+Fragment of the Bear's Soul
+x3
+Hard Glacial Hide
+x24
+Col
+x45
+Necklace of Aragorn
+Level
+8
+
+Set
+Spider Set
+
+Description
+A supple and solid talisman, steeped in the power of the giant spider that wards off fatal falls
+
+Statistics
+Attack Damage
++0.5
+Fall Damage Reduction
++15%
+Dodge
++5%
+2 Piece Set Bonus
++2.5% Movement Speed
+3 Piece Set Bonus
++0.025 Attack Speed
+4 Piece Set Bonus
++2.5% Dodge Chance
+5 Piece Set Bonus
++0.25 Attack Damage, +1% Critical Hit Chance
+Resources
+Spider Venom
+x3
+Oak String
+x1
+Spider Thread
+x20
+Col
+x50
+Skeleton Skull
+Level
+8
+
+Set
+Standard Skeleton Set
+
+Description
+This frozen skull preserves the silent echo of a dead one, the source of an occult power
+
+Statistics
+Skill Damage
++1%
+Health
++5
+Max Mana
++1
+Max Stamina
++1
+Health Regeneration
++0.05/s
+2 Piece Set Bonus
++5% Ability Haste
+3 Piece Set Bonus
++0.05/s Health Regeneration
+4 Piece Set Bonus
+-2% Damage Reduction
+Resources
+Reinforced Skeleton Bone
+x20
+Col
+x35
+Occult Amulet
+Level
+10
+
+Set
+Shadow Neophyte Set
+
+Description
+Engraved with the seal of the Circle, it awakens the senses to the hidden energies of Aincrad
+
+Statistics
+Critical Hit Chance
++2%
+Skill Critical Hit Chance
++2%
+Health
++5
+2 Piece Set Bonus
+-0.6/s Health Regeneration, -50% Healing Received
+3 Piece Set Bonus
+-0.6/s Health Regeneration
+4 Piece Set Bonus
+-0.6/s Health Regeneration
+5 Piece Set Bonus
+-0.6/s Health Regeneration
+6 Piece Set Bonus
+-0.6/s Health Regeneration
+7 Piece Set Bonus
+-0.6/s Health Regeneration
+Resources
+Col
+x5000
+Occult Bracelet
+Level
+10
+
+Set
+Shadow Neophyte Set
+
+Description
+Woven during a nocturnal ceremony of the Circle, it marks one's belonging to the Eclipse.
+
+Statistics
+Defense
++2
+Health
++10
+2 Piece Set Bonus
+-0.6/s Health Regeneration, -50% Healing Received
+3 Piece Set Bonus
+-0.6/s Health Regeneration
+4 Piece Set Bonus
+-0.6/s Health Regeneration
+5 Piece Set Bonus
+-0.6/s Health Regeneration
+6 Piece Set Bonus
+-0.6/s Health Regeneration
+7 Piece Set Bonus
+-0.6/s Health Regeneration
+Resources
+Col
+x5000
+Occult Gloves
+Level
+10
+
+Set
+Shadow Neophyte Set
+
+Description
+Cut from black silk blessed by the Circle, they allow runes to be traced without burns.
+
+Statistics
+Life Steal
++2%
+Spell Vampirism
++2%
+Health
++3
+Mana Regeneration
++0.1/s
+Stamina Regeneration
++0.1/s
+2 Piece Set Bonus
+-0.6/s Health Regeneration, -50% Healing Received
+3 Piece Set Bonus
+-0.6/s Health Regeneration
+4 Piece Set Bonus
+-0.6/s Health Regeneration
+5 Piece Set Bonus
+-0.6/s Health Regeneration
+6 Piece Set Bonus
+-0.6/s Health Regeneration
+7 Piece Set Bonus
+-0.6/s Health Regeneration
+Resources
+Col
+x5000
+Occult Hood
+Level
+10
+
+Set
+Shadow Neophyte Set
+
+Statistics
+2 Piece Set Bonus
+-0.6/s Health Regeneration, -50% Healing Received
+3 Piece Set Bonus
+-0.6/s Health Regeneration
+4 Piece Set Bonus
+-0.6/s Health Regeneration
+5 Piece Set Bonus
+-0.6/s Health Regeneration
+6 Piece Set Bonus
+-0.6/s Health Regeneration
+7 Piece Set Bonus
+-0.6/s Health Regeneration
+Occult Ring
+Level
+10
+
+Set
+Shadow Neophyte Set
+
+Description
+Worn by the initiates of the Circle of the Eclipse, it silently engraves the oath of the first rite.
+
+Statistics
+Physical Damage
++5%
+Magic Damage
++5%
+Projectile Damage
++5%
+Health
++3
+2 Piece Set Bonus
+-0.6/s Health Regeneration, -50% Healing Received
+3 Piece Set Bonus
+-0.6/s Health Regeneration
+4 Piece Set Bonus
+-0.6/s Health Regeneration
+5 Piece Set Bonus
+-0.6/s Health Regeneration
+6 Piece Set Bonus
+-0.6/s Health Regeneration
+7 Piece Set Bonus
+-0.6/s Health Regeneration
+Resources
+Col
+x5000
+Occult Robe
+Level
+10
+
+Set
+Shadow Neophyte Set
+
+Description
+Woven from a cloth blessed by the Master, it hides its wearer from the eyes of the profane.
+
+Statistics
+Attack Speed
+0.05/s
+Dodge
++2.5%
+Max Stamina
++1
+Movement Speed
++2.5%
+2 Piece Set Bonus
+-0.6/s Health Regeneration, -50% Healing Received
+3 Piece Set Bonus
+-0.6/s Health Regeneration
+4 Piece Set Bonus
+-0.6/s Health Regeneration
+5 Piece Set Bonus
+-0.6/s Health Regeneration
+6 Piece Set Bonus
+-0.6/s Health Regeneration
+7 Piece Set Bonus
+-0.6/s Health Regeneration
+Resources
+Col
+x5000
+Occult Skull
+Level
+10
+
+Set
+Shadow Neophyte Set
+
+Description
+Torn away during the last rite of the Circle, it murmurs the oaths of the vanished members.
+
+Statistics
+Skill Critical Damage
++5%
+Magic Damage
++2%
+Max Mana
++1
+2 Piece Set Bonus
+-0.6/s Health Regeneration, -50% Healing Received
+3 Piece Set Bonus
+-0.6/s Health Regeneration
+4 Piece Set Bonus
+-0.6/s Health Regeneration
+5 Piece Set Bonus
+-0.6/s Health Regeneration
+6 Piece Set Bonus
+-0.6/s Health Regeneration
+7 Piece Set Bonus
+-0.6/s Health Regeneration
+Resources
+Col
+x5000

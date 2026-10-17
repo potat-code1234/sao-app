@@ -1,0 +1,40 @@
+{
+  "name": "Copper Set",
+  "cumulative": true,
+  "bonuses": [
+    {
+      "pieces": 2,
+      "stats": {
+        "moveSpeed": 2.5
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 3,
+      "stats": {
+        "healthRegen": 0.05,
+        "manaRegen": 0.05,
+        "staminaRegen": 0.05
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 4,
+      "stats": {
+        "magicDamage": 1,
+        "physicalDamage": 1,
+        "projectileDamage": 1
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 5,
+      "stats": {
+        "health": 1,
+        "defense": 1
+      },
+      "effect": ""
+    }
+  ],
+  "notes": ""
+}

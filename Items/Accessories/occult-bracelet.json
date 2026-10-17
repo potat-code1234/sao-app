@@ -1,0 +1,15 @@
+{
+  "name": "Occult Bracelet",
+  "slot": "bracelet",
+  "set": "shadow-neophyte-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "health": 10,
+    "defense": 2
+  },
+  "effect": "",
+  "notes": "Level 10 · recipe: Col x5000",
+  "texture": "trinketsvol3/trinket_22",
+  "image": "occult-bracelet.png"
+}

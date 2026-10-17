@@ -1,0 +1,12 @@
+{
+  "name": "Elite Bracelet",
+  "slot": "bracelet",
+  "set": "elite-treant-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "critChance": 1
+  },
+  "effect": "",
+  "notes": "Level 3 · recipe: Oak Log x4, Titan Bark x4, Sylvan Bark x8, Col x28"
+}

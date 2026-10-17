@@ -1,0 +1,15 @@
+{
+  "name": "Necklace of Aragorn",
+  "slot": "amulet",
+  "set": "spider-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "attackDamage": 0.5,
+    "dodge": 5
+  },
+  "effect": "+15% Fall Damage Reduction",
+  "notes": "Level 8 · recipe: Spider Venom x3, Oak String x1, Spider Thread x20, Col x50",
+  "texture": "mcfantasytrinketsvol2/necklace11",
+  "image": "necklace-of-aragorn.png"
+}

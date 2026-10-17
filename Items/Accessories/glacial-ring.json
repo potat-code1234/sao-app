@@ -1,0 +1,16 @@
+{
+  "name": "Glacial Ring",
+  "slot": "ring",
+  "set": "ice-spirits-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "defense": 1,
+    "skillCritDamage": 3,
+    "manaRegen": 0.1
+  },
+  "effect": "",
+  "notes": "Level 7 · recipe: Glacial Magic Shard x12, Frost Dust x8, Col x33",
+  "texture": "mctrinketsringsvol1/cyan_ring3",
+  "image": "glacial-ring.png"
+}

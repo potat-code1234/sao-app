@@ -1,0 +1,13 @@
+{
+  "name": "Iron Gloves",
+  "slot": "glove",
+  "set": "iron-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "defense": 1.5,
+    "health": 1
+  },
+  "effect": "",
+  "notes": "Level 5 · recipe: Iron Ingot x1, Col x30"
+}

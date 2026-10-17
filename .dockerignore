@@ -1,0 +1,11 @@
+.git
+.gitignore
+.dockerignore
+Dockerfile
+docker-compose.yaml
+node_modules
+*.tmp
+README.md
+start.bat
+import-textures.js
+accessoires.txt

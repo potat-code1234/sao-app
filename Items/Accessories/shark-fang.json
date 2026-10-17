@@ -1,0 +1,12 @@
+{
+  "name": "Shark Fang",
+  "slot": "artifact",
+  "set": "shark-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "attackDamage": 1
+  },
+  "effect": "",
+  "notes": "Level 7 · recipe: Shark Carapace x12, Wolf Fangs x8, Col x33"
+}

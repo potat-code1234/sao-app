@@ -1,0 +1,31 @@
+{
+  "name": "Ice Golem Set",
+  "cumulative": true,
+  "bonuses": [
+    {
+      "pieces": 2,
+      "stats": {
+        "health": 5
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 3,
+      "stats": {
+        "cooldownReduction": 3,
+        "healthRegen": 0.1
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 4,
+      "stats": {
+        "defense": 1,
+        "health": 2,
+        "skillDamage": 2
+      },
+      "effect": ""
+    }
+  ],
+  "notes": ""
+}

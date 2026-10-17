@@ -1,0 +1,13 @@
+{
+  "name": "Bracelet of the Shark",
+  "slot": "bracelet",
+  "set": "shark-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "lifeSteal": 3,
+    "health": 3
+  },
+  "effect": "",
+  "notes": "Level 7 · recipe: Shark Carapace x12, Iron Ingot x1, Col x33"
+}

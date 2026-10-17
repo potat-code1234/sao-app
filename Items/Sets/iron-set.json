@@ -1,0 +1,40 @@
+{
+  "name": "Iron Set",
+  "cumulative": true,
+  "bonuses": [
+    {
+      "pieces": 2,
+      "stats": {
+        "moveSpeed": 3
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 3,
+      "stats": {
+        "healthRegen": 0.1,
+        "manaRegen": 0.1,
+        "staminaRegen": 0.1
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 4,
+      "stats": {
+        "magicDamage": 2,
+        "physicalDamage": 2,
+        "projectileDamage": 2
+      },
+      "effect": ""
+    },
+    {
+      "pieces": 5,
+      "stats": {
+        "health": 2,
+        "defense": 2
+      },
+      "effect": ""
+    }
+  ],
+  "notes": ""
+}

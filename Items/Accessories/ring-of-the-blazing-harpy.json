@@ -1,0 +1,16 @@
+{
+  "name": "Ring of The Blazing Harpy",
+  "slot": "ring",
+  "set": "harpy-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "physicalDamage": 5,
+    "lifeSteal": 2.5,
+    "maxStamina": 2
+  },
+  "effect": "",
+  "notes": "",
+  "image": "ring-of-the-blazing-harpy.png",
+  "texture": "mctrinketsringsvol1/orange_ring15"
+}

@@ -1,0 +1,14 @@
+{
+  "name": "Iron Bracelet",
+  "slot": "bracelet",
+  "set": "iron-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "critDamage": 1,
+    "skillCritDamage": 1,
+    "health": 1
+  },
+  "effect": "",
+  "notes": "Level 5 · recipe: Iron Ingot x1, Col x30"
+}

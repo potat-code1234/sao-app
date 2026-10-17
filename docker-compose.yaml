@@ -1,0 +1,16 @@
+# Used by Coolify (Docker Compose build pack). Items, sets, images and the profile live in the
+# "sao-gear-data" volume, so they survive redeploys.
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      - APP_USER=${APP_USER:-}
+      - APP_PASSWORD=${APP_PASSWORD:?set APP_PASSWORD in Coolify}
+    volumes:
+      - sao-gear-data:/data
+    expose:
+      - "3077"
+
+volumes:
+  sao-gear-data:

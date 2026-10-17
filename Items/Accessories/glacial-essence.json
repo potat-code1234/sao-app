@@ -1,0 +1,14 @@
+{
+  "name": "Glacial Essence",
+  "slot": "artifact",
+  "set": "ice-spirits-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "magicDamage": 3,
+    "health": 3,
+    "mana": 1
+  },
+  "effect": "",
+  "notes": "Level 7 · recipe: Frost Dust x32, Col x40"
+}

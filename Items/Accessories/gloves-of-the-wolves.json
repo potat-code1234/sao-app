@@ -1,0 +1,14 @@
+{
+  "name": "Gloves of the Wolves",
+  "slot": "glove",
+  "set": "weakling-wolf-set",
+  "rarity": "common",
+  "owned": false,
+  "stats": {
+    "critChance": 1,
+    "lifeSteal": 2.5,
+    "moveSpeed": 5
+  },
+  "effect": "",
+  "notes": "Level 5 · crafted at Secret Accessory Blacksmith"
+}
