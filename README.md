@@ -28,13 +28,13 @@ Without Coolify: `APP_PASSWORD=… docker compose up -d --build`, then open port
 
 ## Import items from screenshots
 
-Item tooltips are read on your PC with free, offline text recognition (OCR), then you check every item in the app before anything is saved. Nothing is sent to an online service.
+As admin, open *Items › Import screenshots* and drop, paste (Ctrl+V) or choose tooltip screenshots. The server reads them with free, offline text recognition (OCR, [read_tooltips.py](read_tooltips.py)), a few seconds each; nothing is sent to an online service. Each item is then shown next to its screenshot with editable fields: fix what the OCR got wrong, tick *Checked*, then *Save checked*. Only checked items are saved.
 
-1. **Install once:** Python 3.10 or newer (for example `winget install Python.Python.3.12`), then `pip install -r requirements.txt` in this folder.
-2. **Read the screenshots:** `python read_tooltips.py <screenshots or folder>`. It writes `tooltips.json`: for each screenshot, the name, minimum level, rarity (from the frame colour), stats, category and set bonuses, a small copy of the image, and warnings about anything uncertain.
-3. **Check and save:** as admin, *Items › Import screenshots*, load `tooltips.json`. Each item is shown next to its screenshot with editable fields: fix what the OCR got wrong, tick *Checked*, then *Save checked*. Only checked items are saved.
+Per screenshot the reader finds the name, minimum level, rarity (from the frame colour), stats, category and set bonuses, and warns about anything uncertain. Only **English** tooltips are imported; French ones are skipped. Runes get the *Rune* slot. An item or set that already exists is updated rather than duplicated, keeping its image, texture and notes. Equipment without a category, such as gifts, lanterns and masks, becomes an artifact. Stats the app has no field for (block chance, parry chance, knockback resistance…) are kept as effect text.
 
-Only **English** tooltips are imported: French ones are skipped, and so are runes and other items that have no equipment slot. An item or set that already exists is updated rather than duplicated, keeping its image, texture and notes. Equipment without a category, such as gifts, lanterns and masks, becomes an artifact. Stats the app has no field for (block chance, parry chance, knockback resistance…) are kept as effect text.
+- **On the server:** the Docker image includes Python and the OCR packages; nothing to set up.
+- **Running locally (`start.bat`):** install Python 3.10+ (for example `winget install Python.Python.3.12`) and run `pip install -r requirements.txt` once. Set `PYTHON` if Python isn't on the PATH as `python`.
+- **Without the app:** `python read_tooltips.py <screenshots or folder>` writes `tooltips.json`, which the same dialog can load.
 
 ## Pages
 
@@ -50,7 +50,7 @@ Only **English** tooltips are imported: French ones are skipped, and so are rune
 
 `score = Σ weight × total stat`. Here *total* is base + item stats + active set bonuses, and a stat with a **Cap** counts only up to that cap. A build that misses a **Min** is never picked unless no build can reach it. The search is exhaustive, so the results are the best possible builds, not estimates. If the time limit is hit, the results page says so.
 
-By default the optimizer fills only the accessory slots (glove, amulet, bracelet, 2 rings, 3 artifacts) and keeps your current armor and offhand. Turn on *Also optimize armor & offhand* to include those slots.
+By default the optimizer fills only the accessory slots (glove, amulet, bracelet, 2 rings, 3 artifacts) and keeps your current armor, offhand and runes. Turn on *Also optimize armor & offhand* or *Also optimize runes* to include those slots. Runes go in two slots, the chestplate rune and the leggings rune.
 
 ## Data files
 
@@ -79,7 +79,7 @@ You can edit these files by hand, then press **Reload** in the app. The file nam
 }
 ```
 
-- `slot`: `glove`, `amulet`, `bracelet`, `ring`, `artifact`, `helmet`, `chestplate`, `leggings`, `boots`, `offhand`
+- `slot`: `glove`, `amulet`, `bracelet`, `ring`, `artifact`, `helmet`, `chestplate`, `leggings`, `boots`, `offhand`, `rune`
 - `rarity`: `common`, `uncommon`, `rare`, `epic`, `legendary`, `mythic`, `event` (pink, red or rainbow tooltips)
 - `level`: minimum level to equip; leave it out to use the set's `level`. The optimizer's *Item level* range filters on it, and items with no level are always kept.
 - `set`: the id (file name) of a set, or `null`

@@ -499,7 +499,7 @@ select { cursor: pointer; }
     'artifact1 chestplate bracelet'
     'artifact2 leggings ring1'
     'artifact3 boots ring2'
-    '. offhand .';
+    'chestRune offhand legsRune';
   gap: 10px 16px;
 }
 .slot-cell { display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 0; }

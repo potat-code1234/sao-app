@@ -9,7 +9,8 @@ const fs = require('fs');
 const fsp = fs.promises;
 const path = require('path');
 const crypto = require('crypto');
-const { exec } = require('child_process');
+const os = require('os');
+const { exec, spawn } = require('child_process');
 
 const PORT = Number(process.env.PORT) || 3077;
 const HOST = process.env.HOST || '127.0.0.1';
@@ -318,6 +319,59 @@ async function listTextures() {
   return packs;
 }
 
+// ---------- screenshot OCR: read_tooltips.py --serve, started on first use, stopped when idle ----------
+const PYTHON = process.env.PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
+const OCR_IDLE_MS = 5 * 60 * 1000;
+let ocr = null; // { proc, pending: Map(id -> {resolve, reject}), buf, nextId, idle }
+
+function ocrWorker() {
+  if (ocr) return ocr;
+  const proc = spawn(PYTHON, [path.join(ROOT, 'read_tooltips.py'), '--serve'], { stdio: ['pipe', 'pipe', 'inherit'], windowsHide: true });
+  const w = { proc, pending: new Map(), buf: '', nextId: 1, idle: null };
+  const fail = (message) => {
+    if (ocr === w) ocr = null;
+    clearTimeout(w.idle);
+    for (const p of w.pending.values()) p.reject(new Error(message));
+    w.pending.clear();
+  };
+  proc.on('error', (e) => fail(e.code === 'ENOENT' ? `Python was not found ("${PYTHON}"): install it, or set PYTHON.` : e.message));
+  proc.on('exit', (code) => fail(`The screenshot reader stopped (exit code ${code}). Are its packages installed? pip install -r requirements.txt`));
+  proc.stdin.on('error', () => {}); // reported by 'exit'
+  proc.stdout.setEncoding('utf8');
+  proc.stdout.on('data', (chunk) => {
+    w.buf += chunk;
+    for (let i = w.buf.indexOf('\n'); i >= 0; i = w.buf.indexOf('\n')) {
+      const line = w.buf.slice(0, i);
+      w.buf = w.buf.slice(i + 1);
+      let msg;
+      try {
+        msg = JSON.parse(line);
+      } catch {
+        continue;
+      }
+      const p = w.pending.get(msg.id);
+      if (!p) continue;
+      w.pending.delete(msg.id);
+      if (msg.error) p.reject(Object.assign(new Error(msg.error), { status: 422 }));
+      else p.resolve(msg.tooltip);
+    }
+  });
+  ocr = w;
+  return w;
+}
+
+function readScreenshot(file, name) {
+  const w = ocrWorker();
+  clearTimeout(w.idle);
+  return new Promise((resolve, reject) => {
+    const id = w.nextId++;
+    w.pending.set(id, { resolve, reject });
+    w.proc.stdin.write(`${JSON.stringify({ id, path: file, name })}\n`);
+  }).finally(() => {
+    if (ocr === w && !w.pending.size) w.idle = setTimeout(() => w.proc.kill(), OCR_IDLE_MS);
+  });
+}
+
 // ---------- sets ----------
 function cleanSet(body) {
   const tiers = Array.isArray(body.bonuses) ? body.bonuses : [];
@@ -372,6 +426,22 @@ async function handleApi(req, res, url, role) {
 
   if (kind === 'textures' && method === 'GET') {
     return send(res, 200, { packs: await listTextures() });
+  }
+
+  // Read one tooltip screenshot (admin only: writes from read-only logins are refused earlier).
+  if (kind === 'import' && id === 'read' && method === 'POST') {
+    const body = await readBody(req);
+    const m = /^data:image\/(png|jpeg|webp|gif|bmp);base64,([A-Za-z0-9+/=]+)$/.exec(String(body.image || ''));
+    if (!m) return send(res, 400, { error: 'Send a PNG, JPG, WEBP, GIF or BMP image.' });
+    const file = path.join(os.tmpdir(), `sao-gear-${crypto.randomUUID()}.${m[1] === 'jpeg' ? 'jpg' : m[1]}`);
+    await fsp.writeFile(file, Buffer.from(m[2], 'base64'));
+    try {
+      return send(res, 200, { tooltip: await readScreenshot(file, String(body.name || 'screenshot').slice(0, 120)) });
+    } catch (e) {
+      return send(res, e.status || 503, { error: e.message });
+    } finally {
+      fsp.unlink(file).catch(() => {});
+    }
   }
 
   if (kind === 'items' || kind === 'sets') {
@@ -506,6 +576,7 @@ ensureDirs().then(async () => {
 // Docker stops containers with SIGTERM; exit cleanly instead of waiting to be killed.
 for (const sig of ['SIGTERM', 'SIGINT']) {
   process.on(sig, () => {
+    ocr?.proc.kill();
     server.close(() => process.exit(0));
     server.closeAllConnections();
   });

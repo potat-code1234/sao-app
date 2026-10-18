@@ -63,6 +63,7 @@ const SLOT_GLYPHS = {
     '<path fill-rule="evenodd" d="M15 6.5h10.5v20.5l9.6 4.8c2 1 3 2.6 3 4.4V39H15z M15 10.5h10.5v2H15z"/><path d="M14 40.5h25.5V43H14z"/>',
   offhand:
     '<path d="M17 13.5a2 2 0 0 1 4 0V26h-4z M22 9.5a2 2 0 0 1 4 0V26h-4z M27 11.5a2 2 0 0 1 4 0V26h-4z M32 15.5a2 2 0 0 1 4 0V28h-4z M17 25h19v8c0 5-3.6 8.5-8.5 8.5H25c-4.6 0-8-3.4-8-8z M17 27.5L10.6 21 8 23.6l9 10z"/>',
+  rune: '<path fill-rule="evenodd" d="M24 4l15 8.5v23L24 44 9 35.5v-23z M21.5 13h3v22h-3z M24.5 14.5l6 5-2 2.2-6-5z M24.5 23.5l6 6.5-2 2-6-6.5z"/>',
 };
 
 const UI = {

@@ -43,6 +43,7 @@ export const SLOT_TYPES = {
   leggings: { label: 'Leggings', group: 'armor' },
   boots: { label: 'Boots', group: 'armor' },
   offhand: { label: 'Offhand', group: 'armor' },
+  rune: { label: 'Rune', group: 'rune' }, // applied to the chestplate or the leggings
 };
 export const SLOT_TYPE_KEYS = Object.keys(SLOT_TYPES);
 
@@ -61,6 +62,8 @@ export const SLOTS = [
   { id: 'boots', type: 'boots', label: 'Boots' },
   { id: 'ring2', type: 'ring', label: 'Ring II' },
   { id: 'offhand', type: 'offhand', label: 'Offhand' },
+  { id: 'chestRune', type: 'rune', label: 'Chestplate rune' },
+  { id: 'legsRune', type: 'rune', label: 'Leggings rune' },
 ];
 export const SLOT_MAP = Object.fromEntries(SLOTS.map((s) => [s.id, s]));
 

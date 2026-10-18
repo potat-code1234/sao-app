@@ -76,6 +76,7 @@ function defaultProfile() {
       caps: { critChance: 100 },
       onlyOwned: true,
       includeArmor: false,
+      includeRunes: false,
       allowDuplicates: false,
       respectLocks: true,
       oneOccult: false,
@@ -528,6 +529,7 @@ function optimizeSlotFilter() {
   const o = state.profile.optimizer;
   return (s) => {
     if (!o.includeArmor && SLOT_TYPES[s.type].group === 'armor') return false;
+    if (!o.includeRunes && SLOT_TYPES[s.type].group === 'rune') return false;
     if (o.respectLocks && state.profile.locked[s.id]) return false;
     return true;
   };
@@ -629,6 +631,7 @@ function renderOptimizer() {
         <div class="panel-body opt-options">
           ${toggle('onlyOwned', 'Only use items I own', o.onlyOwned)}
           ${toggle('includeArmor', 'Also optimize armor &amp; offhand', o.includeArmor, 'When off, helmet/chest/legs/boots/offhand stay as currently equipped')}
+          ${toggle('includeRunes', 'Also optimize runes', o.includeRunes, 'When off, the chestplate and leggings rune slots stay as currently equipped')}
           ${toggle('respectLocks', 'Keep locked slots as they are', o.respectLocks)}
           ${toggle('allowDuplicates', 'Allow the same ring twice', o.allowDuplicates, 'Rings are the only items you can wear twice. Turn on if you own two copies of a ring.')}
           ${state.items.some(isOccult) ? toggle('oneOccult', 'Only one Occult item', o.oneOccult, 'Wearing 2+ Shadow Neophyte pieces costs 0.6/s health regen per piece and halves healing received') : ''}
@@ -1531,18 +1534,19 @@ async function deleteSet(id) {
 
 // ---- import items from tooltip screenshots: read_tooltips.py reads them on your PC, you check them here
 function openScreenshotImport() {
-  let cards = []; // { file, image, warnings, r: reading being edited, skip: reason | null, checked }
+  const cards = []; // { file, image, warnings, r: reading being edited, skip: reason | null, checked }
   const entry = openModal(
     `<header class="modal-head"><span class="ph-diamond"></span><h2>Import screenshots</h2>
       <div class="ph-right"><button class="icon-btn" data-close title="Close">${uiIcon('close')}</button></div></header>
     <div class="modal-body">
       <ol class="hint review-steps">
-        <li>On your PC, run <code>python read_tooltips.py &lt;screenshots or folder&gt;</code>. It reads the tooltips with free OCR and writes <code>tooltips.json</code>.</li>
-        <li>Load that file here. Compare each item with its screenshot, fix what the OCR got wrong, and tick <b>Checked</b>.</li>
-        <li>Press <b>Save checked</b>: only checked items are imported. French tooltips and runes are skipped.</li>
+        <li>Drop, paste (Ctrl+V) or choose tooltip screenshots. The server reads them with free OCR, a few seconds each.
+          <span class="muted">(A <code>tooltips.json</code> made with <code>read_tooltips.py</code> on your PC works too.)</span></li>
+        <li>Compare each item with its screenshot, fix what the OCR got wrong, and tick <b>Checked</b>.</li>
+        <li>Press <b>Save checked</b>: only checked items are imported. French tooltips are skipped.</li>
       </ol>
-      <label class="shot-drop" tabindex="0">${uiIcon('copy')}<span>Drop or <u>choose</u> tooltips.json</span>
-        <input type="file" accept=".json,application/json" hidden></label>
+      <label class="shot-drop" tabindex="0">${uiIcon('image')}<span>Drop, paste or <u>choose</u> screenshots</span>
+        <input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp,.json,application/json" multiple hidden></label>
       <div class="review-list"></div>
       <datalist id="rv-sets">${state.sets.map((s) => `<option value="${esc(s.name)}">`).join('')}</datalist>
     </div>
@@ -1623,10 +1627,12 @@ function openScreenshotImport() {
     const setWhat = !set ? '' : !set.before ? ` <span class="tag new">New set ${esc(set.body.name)}</span>` : set.changes.length ? ` <span class="tag upd">Updates set ${esc(set.before.name)}</span>` : '';
     return what + setWhat;
   };
+  let reading = ''; // "Reading x (2 of 5)…" while screenshots are being read
   const paintFooter = () => {
     const open = cards.filter((c) => !c.skip);
     const checked = open.filter((c) => c.checked).length;
-    m.querySelector('.import-status').textContent = cards.length ? `${checked} of ${open.length} checked · ${cards.length - open.length} skipped` : '';
+    const counts = cards.length ? `${checked} of ${open.length} checked · ${cards.length - open.length} skipped` : '';
+    m.querySelector('.import-status').textContent = [reading, counts].filter(Boolean).join(' · ');
     m.querySelector('[data-save]').disabled = !checked;
   };
   const paintCard = (idx) => {
@@ -1641,29 +1647,51 @@ function openScreenshotImport() {
     if (el) el.innerHTML = statusHtml(cards[idx]);
     paintFooter();
   };
-  const paintAll = () => {
-    list.innerHTML = cards.map(cardHtml).join('');
-    cards.forEach((c, i) => !c.skip && refreshStatus(i));
+  const addCard = (t) => {
+    const r = structuredClone(t.reading);
+    const skipped = planImport([{ file: t.file, reading: r }], state.items, state.sets).skipped[0];
+    const c = { file: t.file, image: t.image, warnings: t.warnings || [], r, skip: skipped?.reason || null, checked: false };
+    cards.push(c);
+    list.insertAdjacentHTML('beforeend', cardHtml(c, cards.length - 1));
+    if (!c.skip) refreshStatus(cards.length - 1);
     paintFooter();
   };
-
-  const load = async (file) => {
-    if (!file) return;
-    try {
-      const data = JSON.parse(await file.text());
-      if (!Array.isArray(data?.tooltips)) throw new Error('this is not a file from read_tooltips.py');
-      cards = data.tooltips.map((t) => {
-        const r = structuredClone(t.reading);
-        const skipped = planImport([{ file: t.file, reading: r }], state.items, state.sets).skipped[0];
-        return { file: t.file, image: t.image, warnings: t.warnings || [], r, skip: skipped?.reason || null, checked: false };
-      });
-      cards.sort((a, b) => !!a.skip - !!b.skip); // items to check first
-      paintAll();
-    } catch (e) {
-      toast(`Could not load the file: ${e.message}`, 'err');
+  let queue = Promise.resolve(); // screenshots are read one after another
+  const addFiles = (files) => {
+    const shots = [...files].filter((f) => f.type.startsWith('image/'));
+    for (const f of [...files].filter((f) => /\.json$/i.test(f.name) || f.type === 'application/json')) {
+      f.text()
+        .then((text) => {
+          const data = JSON.parse(text);
+          if (!Array.isArray(data?.tooltips)) throw new Error('this is not a file from read_tooltips.py');
+          data.tooltips.forEach(addCard);
+        })
+        .catch((e) => toast(`Could not load ${f.name}: ${e.message}`, 'err'));
     }
+    shots.forEach((f, i) => {
+      queue = queue.then(async () => {
+        reading = `Reading ${f.name || 'pasted image'} (${i + 1} of ${shots.length})…`;
+        paintFooter();
+        try {
+          const image = await new Promise((res, rej) => {
+            const fr = new FileReader();
+            fr.onload = () => res(fr.result);
+            fr.onerror = () => rej(fr.error);
+            fr.readAsDataURL(f);
+          });
+          addCard((await api('POST', '/api/import/read', { image, name: f.name || `pasted-${cards.length + 1}.png` })).tooltip);
+        } catch (e) {
+          toast(`${f.name || 'Screenshot'}: ${e.message}`, 'err');
+        }
+        if (i === shots.length - 1) reading = '';
+        paintFooter();
+      });
+    });
   };
-  drop.querySelector('input').addEventListener('change', (e) => load(e.target.files[0]));
+  drop.querySelector('input').addEventListener('change', (e) => {
+    addFiles(e.target.files);
+    e.target.value = '';
+  });
   drop.addEventListener('dragover', (e) => {
     e.preventDefault();
     drop.classList.add('drag');
@@ -1672,8 +1700,13 @@ function openScreenshotImport() {
   drop.addEventListener('drop', (e) => {
     e.preventDefault();
     drop.classList.remove('drag');
-    load(e.dataTransfer.files[0]);
+    addFiles(e.dataTransfer.files);
   });
+  entry.onPaste = (e) => {
+    if (!e.clipboardData?.files.length) return;
+    e.preventDefault();
+    addFiles(e.clipboardData.files);
+  };
 
   const onEdit = (e) => {
     const t = e.target;

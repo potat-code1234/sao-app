@@ -1,14 +1,16 @@
-"""Reads item tooltip screenshots with free, local OCR and writes them to a file that you check and
-import in SAO Gear (as admin: Items > Import screenshots). Nothing is sent anywhere.
+"""Reads item tooltip screenshots with free, local OCR (nothing is sent anywhere).
+
+The SAO Gear server runs this script itself (with --serve) when an admin drops screenshots into
+Items > Import screenshots. It can also run on its own and write a file to load in that dialog:
 
     pip install -r requirements.txt                 (once)
     python read_tooltips.py <screenshots or folders...> [-o tooltips.json]
 
 or, with uv installed:  uv run read_tooltips.py <screenshots or folders...>
 
-The file holds, per screenshot, what was read (name, minimum level, rarity from the frame colour,
-stats, category, set bonuses), a small copy of the image, and warnings about anything uncertain.
-French tooltips are read too but marked as French; the app skips them.
+Per screenshot it returns what was read (name, minimum level, rarity from the frame colour, stats,
+category (runes included), set bonuses), a small copy of the image, and warnings about anything
+uncertain. French tooltips are read too but marked as French; the app skips them.
 """
 
 # /// script
@@ -73,6 +75,7 @@ SLOTS = {
     "leggings": ["Leggings", "Jambières"],
     "boots": ["Boots", "Bottes"],
     "offhand": ["Offhand", "Off-hand", "Shield", "Bouclier", "Main secondaire"],
+    "rune": ["Rune"],
 }
 
 FRENCH = re.compile(r"niveau minimum|cat[ée]gorie|d[ée]g[aâ]ts|sant[ée]|d[ée]fense|vitesse|chance critique|cette rune|vous devez|esquive", re.I)
@@ -248,7 +251,7 @@ def read_tooltip(engine, path):
             category = re.sub(r"\s*[\[(].*$", "", body[i + 1]["text"]).strip()
             break
     is_rune = bool(re.search(r"\brune\b", category or "", re.I)) or bool(re.search(r"cette rune|this rune", text, re.I))
-    slot = None
+    slot = "rune" if is_rune else None
     if category and not is_rune:
         slot = next((s for s, names in SLOTS.items() if any(letters(n) == letters(category) for n in names)), None)
         if not slot:
@@ -297,11 +300,11 @@ def read_tooltip(engine, path):
         if not set_name:
             warnings.append("Set bonuses found but no set name.")
 
-    if not stats and not is_rune:
+    if not stats:
         warnings.append("No stats found.")
     reading = {
         "language": language,
-        "kind": "rune" if is_rune else "equipment" if stats or set_info else "other",
+        "kind": "equipment" if stats or set_info or is_rune else "other",
         "name": name,
         "existing_item": None,
         "level": level,
@@ -336,11 +339,40 @@ def collect(inputs):
     return files
 
 
+def serve():
+    """Used by the SAO Gear server: one JSON request per line on stdin ({"id", "path", "name"}), one JSON
+    reply per line on stdout ({"id", "tooltip"} or {"id", "error"}). The OCR models stay loaded."""
+    replies = sys.stdout
+    sys.stdout = sys.stderr  # library output must not mix with the replies
+    from rapidocr import RapidOCR
+
+    engine = RapidOCR(params={"Global.log_level": "error"})
+    for line in sys.stdin:
+        if not line.strip():
+            continue
+        req = json.loads(line)
+        try:
+            path = Path(req["path"])
+            reading, warnings, lines = read_tooltip(engine, path)
+            tooltip = {"file": req.get("name") or path.name, "image": thumbnail(path), "reading": reading, "warnings": warnings, "ocr": lines}
+            reply = {"id": req["id"], "tooltip": tooltip}
+        except Exception as e:  # one unreadable image must not stop the worker
+            reason = str(e).replace(str(req.get("path")), req.get("name") or "the image")
+            reply = {"id": req.get("id"), "error": f"Could not read the screenshot: {reason}"}
+        replies.write(json.dumps(reply) + "\n")
+        replies.flush()
+
+
 def main():
     ap = argparse.ArgumentParser(description="Read SAO tooltip screenshots for import into SAO Gear.")
-    ap.add_argument("inputs", nargs="+", help="screenshots or folders of screenshots")
+    ap.add_argument("inputs", nargs="*", help="screenshots or folders of screenshots")
     ap.add_argument("-o", "--output", default="tooltips.json", help="file to write (default: tooltips.json)")
+    ap.add_argument("--serve", action="store_true", help=argparse.SUPPRESS)
     args = ap.parse_args()
+    if args.serve:
+        return serve()
+    if not args.inputs:
+        ap.error("give screenshots or folders of screenshots")
     files = collect(args.inputs)
     if not files:
         sys.exit("No screenshots found.")

@@ -37,8 +37,8 @@ export function planImport(readings, items, sets) {
       skipped.push({ file, name: r.name, reason: r.language === 'fr' ? 'French screenshot' : 'not an English screenshot' });
       continue;
     }
-    if (r.kind !== 'equipment') {
-      skipped.push({ file, name: r.name, reason: r.kind === 'rune' ? 'runes have no equipment slot in the app' : 'not equipment' });
+    if (r.kind === 'other') {
+      skipped.push({ file, name: r.name, reason: 'not equipment' });
       continue;
     }
     const existing = items.find((i) => norm(i.name) === norm(r.existing_item) || norm(i.name) === norm(r.name));
@@ -67,7 +67,7 @@ export function planImport(readings, items, sets) {
     const body = {
       ...(existing || { notes: '', effect: '' }),
       name: r.name,
-      slot: r.slot || existing?.slot || 'artifact',
+      slot: r.slot || (r.kind === 'rune' ? 'rune' : existing?.slot || 'artifact'),
       rarity: r.rarity,
       level: r.level,
       stats: statsObj(r.stats),
