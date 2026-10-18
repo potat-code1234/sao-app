@@ -88,6 +88,7 @@ const UI = {
   diamond: '<path d="M12 2l10 10-10 10L2 12z"/>',
   info: '<path fill-rule="evenodd" d="M12 2.5a9.5 9.5 0 1 1 0 19 9.5 9.5 0 0 1 0-19z M11 10.5h2V17h-2z M12 6.5a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6z"/>',
   swap: stroke('M4 8h14l-3.5-3.5M20 16H6l3.5 3.5', 2.2),
+  flag: '<path d="M5 2.5h2.2v19H5z M8.2 3.5h11.3l-2.6 4.6 2.6 4.6H8.2z"/>',
 };
 
 export function statIcon(key) {

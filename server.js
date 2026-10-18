@@ -23,6 +23,7 @@ const SETS_DIR = path.join(DATA_ROOT, 'Items', 'Sets');
 const TEXTURES_DIR = path.join(ROOT, 'Textures');
 const DATA_DIR = path.join(DATA_ROOT, 'Data');
 const PROFILE_FILE = path.join(DATA_DIR, 'profile.json');
+const REPORTS_FILE = path.join(DATA_DIR, 'reports.json');
 // Logins: [role, user name, password]. Without an admin password there is no login and everyone is admin.
 const ACCOUNTS = [
   ['admin', process.env.ADMIN_USER || 'admin', process.env.ADMIN_PASSWORD || ''],
@@ -372,6 +373,45 @@ function readScreenshot(file, name) {
   });
 }
 
+// ---------- problem reports (Data/reports.json) ----------
+const REPORT_KINDS = ['stats', 'texture', 'set', 'level', 'other'];
+
+async function readReports() {
+  try {
+    const list = await readJson(REPORTS_FILE);
+    return Array.isArray(list) ? list : [];
+  } catch (e) {
+    if (e.code === 'ENOENT') return [];
+    throw e; // unreadable: don't overwrite it
+  }
+}
+
+// Read-change-write of the reports file, one at a time.
+let reportsQueue = Promise.resolve();
+function withReports(change) {
+  const run = reportsQueue.then(async () => {
+    const list = await readReports();
+    const result = await change(list);
+    await writeJsonAtomic(REPORTS_FILE, list);
+    return result;
+  });
+  reportsQueue = run.catch(() => {});
+  return run;
+}
+
+// At most 20 reports per hour from one address.
+const reportCounts = new Map();
+function reportAllowed(ip) {
+  const now = Date.now();
+  if (reportCounts.size > 5000) for (const [k, v] of reportCounts) if (v.until < now) reportCounts.delete(k);
+  const r = reportCounts.get(ip);
+  if (!r || r.until < now) {
+    reportCounts.set(ip, { count: 1, until: now + 3600e3 });
+    return true;
+  }
+  return ++r.count <= 20;
+}
+
 // ---------- sets ----------
 function cleanSet(body) {
   const tiers = Array.isArray(body.bonuses) ? body.bonuses : [];
@@ -441,6 +481,58 @@ async function handleApi(req, res, url, role) {
       return send(res, e.status || 503, { error: e.message });
     } finally {
       fsp.unlink(file).catch(() => {});
+    }
+  }
+
+  // Problem reports on items: every login can send one; only admin can list, resolve or delete them.
+  if (kind === 'reports') {
+    if (method === 'POST' && !id) {
+      if (!reportAllowed(clientIp(req))) return send(res, 429, { error: 'Too many reports from here. Try again in an hour.' });
+      const body = await readBody(req);
+      const itemId = String(body.itemId || '');
+      const itemFile = path.join(ITEMS_DIR, `${itemId}.json`);
+      if (!validId(itemId) || !fs.existsSync(itemFile)) return send(res, 404, { error: 'Unknown item.' });
+      const message = String(body.message || '').trim().slice(0, 1000);
+      if (!message) return send(res, 400, { error: 'Describe the problem first.' });
+      const item = await readJson(itemFile).catch(() => ({}));
+      const report = {
+        id: crypto.randomUUID(),
+        itemId,
+        itemName: String(item.name || itemId),
+        kind: REPORT_KINDS.includes(body.kind) ? body.kind : 'other',
+        message,
+        by: String(body.by || '').trim().slice(0, 40),
+        role,
+        status: 'open',
+        createdAt: new Date().toISOString(),
+      };
+      const full = await withReports((list) => {
+        if (list.filter((r) => r.status === 'open').length >= 1000) return true;
+        list.push(report);
+        return false;
+      });
+      return full ? send(res, 507, { error: 'Too many open reports. Ask the admin to go through them.' }) : send(res, 201, { ok: true });
+    }
+    if (role !== 'admin') return send(res, 403, { error: 'Only the admin can see reports.' });
+    if (method === 'GET' && !id) return send(res, 200, { reports: await readReports() });
+    if (method === 'PUT' && id) {
+      const body = await readBody(req);
+      const updated = await withReports((list) => {
+        const r = list.find((x) => x.id === id);
+        if (!r) return null;
+        r.status = body.status === 'resolved' ? 'resolved' : 'open';
+        if (r.status === 'resolved') r.resolvedAt = new Date().toISOString();
+        else delete r.resolvedAt;
+        return r;
+      });
+      return updated ? send(res, 200, updated) : send(res, 404, { error: 'Unknown report.' });
+    }
+    if (method === 'DELETE' && id) {
+      await withReports((list) => {
+        const i = list.findIndex((x) => x.id === id);
+        if (i >= 0) list.splice(i, 1);
+      });
+      return send(res, 200, { ok: true });
     }
   }
 
@@ -516,7 +608,8 @@ const server = http.createServer(async (req, res) => {
       return redirect(res, '/login');
     }
     if (p === '/api/me') return send(res, 200, { role, auth: AUTH_ON, user: ACCOUNTS.find(([r]) => r === role)?.[1] || null });
-    if (role !== 'admin' && p.startsWith('/api/') && req.method !== 'GET') return send(res, 403, { error: 'This account is read-only.' });
+    const isReport = p === '/api/reports' && req.method === 'POST'; // every login can report a problem
+    if (role !== 'admin' && p.startsWith('/api/') && req.method !== 'GET' && !isReport) return send(res, 403, { error: 'This account is read-only.' });
     if (p.startsWith('/api/')) return await handleApi(req, res, url, role);
     if (url.pathname.startsWith('/item-images/')) {
       return await serveFile(res, IMAGES_DIR, decodeURIComponent(url.pathname.slice('/item-images/'.length)));

@@ -60,6 +60,16 @@ const NAV = [
   { id: 'sets', label: 'Sets', icon: 'sets' },
   { id: 'optimizer', label: 'Optimizer', icon: 'optimizer' },
   { id: 'profile', label: 'Base Stats', icon: 'profile' },
+  { id: 'reports', label: 'Reports', icon: 'flag', admin: true },
+];
+
+// What a player can report about an item.
+const REPORT_KINDS = [
+  { key: 'stats', label: 'Wrong stats' },
+  { key: 'texture', label: 'Wrong image' },
+  { key: 'set', label: 'Wrong set or set bonus' },
+  { key: 'level', label: 'Wrong level' },
+  { key: 'other', label: 'Something else' },
 ];
 
 function defaultProfile() {
@@ -123,9 +133,12 @@ const state = {
   filters: { q: '', slot: 'all', set: 'all', owned: 'all', sort: 'value' },
   opt: { running: false, progress: null, result: null },
   me: { role: 'admin', auth: false, user: null }, // from /api/me; "viewer" = read-only login
+  reports: [], // problem reports on items (admin only)
+  reportFilter: 'open',
 };
 
 const canEdit = () => state.me.role === 'admin';
+const openReports = () => state.reports.filter((r) => r.status === 'open');
 
 function indexData() {
   state.items.sort((a, b) => String(a.name).localeCompare(String(b.name)));
@@ -208,10 +221,14 @@ function statIco(key, size = '') {
 }
 
 // ---------------------------------------------------------------- shell
+// Admin-only pages appear once the login is known.
+const navAllowed = (n) => !n.admin || (state.loaded && canEdit());
+
 function renderNav() {
-  $('#nav').innerHTML = NAV.map(
-    (n) => `<button class="nav-btn" data-nav="${n.id}" title="${n.label}">
-      <span class="nav-orb">${uiIcon(n.icon)}</span><span class="nav-label">${n.label}</span></button>`
+  const badge = { reports: openReports().length };
+  $('#nav').innerHTML = NAV.filter(navAllowed).map(
+    (n) => `<button class="nav-btn ${n.id === state.view ? 'active' : ''}" data-nav="${n.id}" title="${n.label}">
+      <span class="nav-orb">${uiIcon(n.icon)}${badge[n.id] ? `<span class="nav-badge">${badge[n.id]}</span>` : ''}</span><span class="nav-label">${n.label}</span></button>`
   ).join('');
 }
 
@@ -231,7 +248,9 @@ function renderTopbar() {
 
 let lastView = null;
 function render() {
-  $$('.nav-btn').forEach((b) => b.classList.toggle('active', b.dataset.nav === state.view));
+  const page = NAV.find((n) => n.id === state.view);
+  if (!page || !navAllowed(page)) state.view = 'equipment';
+  renderNav();
   const view = $('#view');
   const sameView = lastView === state.view;
   const scrollY = window.scrollY;
@@ -252,6 +271,7 @@ function go(viewId) {
   localSet('view', viewId);
   if (location.hash.slice(1) !== viewId) history.replaceState(null, '', `#${viewId}`);
   render();
+  if (viewId === 'reports') refreshReports(); // pick up reports sent since the page was loaded
 }
 
 // ---------------------------------------------------------------- equipment view
@@ -421,6 +441,7 @@ function itemCard(it) {
         ${set ? `<span class="tag set">${esc(set.name)}</span>` : it.set ? '<span class="tag warn">missing set</span>' : ''}
         ${where.length ? `<span class="tag eq">Equipped · ${where.join(', ')}</span>` : ''}
         ${owned ? '' : '<span class="tag dim">not owned</span>'}
+        ${reportTag(it)}
       </div>
       ${statChips(it.stats) || '<span class="muted small">No stats</span>'}
       ${it.effect ? `<p class="effect">${esc(it.effect)}</p>` : ''}
@@ -428,6 +449,7 @@ function itemCard(it) {
     <div class="item-actions">
       <button class="btn sm ghost" data-action="equip-item" data-id="${id}" title="Equip in a matching slot">${uiIcon('equip')} Equip</button>
       <span class="spacer"></span>
+      <button class="icon-btn sm" data-action="report-item" data-id="${id}" title="Report a problem with this item">${uiIcon('flag')}</button>
       <button class="icon-btn sm admin-only" data-action="edit-item" data-id="${id}" title="Edit">${uiIcon('edit')}</button>
       <button class="icon-btn sm admin-only" data-action="dup-item" data-id="${id}" title="Duplicate">${uiIcon('copy')}</button>
       <button class="icon-btn sm danger admin-only" data-action="delete-item" data-id="${id}" title="Delete">${uiIcon('trash')}</button>
@@ -524,6 +546,133 @@ function renderSets() {
       <div class="set-grid">${state.sets.length ? state.sets.map(setCard).join('') : empty('No sets yet. Create one here or straight from the item editor. Sets are saved in <code>Items/Sets</code>.')}</div>
     </section>
   </div>`;
+}
+
+// ---------------------------------------------------------------- reports view (admin)
+const reportsFor = (itemId) => openReports().filter((r) => r.itemId === itemId);
+const reportKindLabel = (key) => REPORT_KINDS.find((k) => k.key === key)?.label || key;
+const fmtWhen = (iso) => new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+
+// "2 reports" on an item card, for the admin
+function reportTag(it) {
+  const n = reportsFor(it.id).length;
+  return n ? `<span class="tag warn report-tag" data-nav="reports" title="Open problem reports — click to see them">${uiIcon('flag')} ${n} report${n > 1 ? 's' : ''}</span>` : '';
+}
+
+function reportCard(r) {
+  const item = state.itemsById[r.itemId];
+  const who = r.by ? esc(r.by) : r.role === 'admin' ? 'Admin' : 'Anonymous';
+  const id = esc(r.id);
+  return `<article class="report-card ${r.status}">
+    ${
+      item
+        ? `<button class="piece" style="--r:${rarityOf(item).color}" data-action="edit-item" data-id="${esc(item.id)}" title="Edit ${esc(item.name)}">
+            <span class="piece-thumb">${thumb(item)}</span><span class="piece-name">${esc(item.name)}</span></button>`
+        : `<span class="piece gone" title="This item was deleted"><span class="piece-name">${esc(r.itemName)}</span><span class="tag dim">deleted</span></span>`
+    }
+    <div class="report-body">
+      <div class="report-meta"><span class="tag ${r.status === 'open' ? 'warn' : ''}">${esc(reportKindLabel(r.kind))}</span>
+        <span class="muted">${who} · ${fmtWhen(r.createdAt)}${r.resolvedAt ? ` · resolved ${fmtWhen(r.resolvedAt)}` : ''}</span></div>
+      <p class="report-msg">${esc(r.message)}</p>
+    </div>
+    <div class="row-actions">
+      ${
+        r.status === 'open'
+          ? `<button class="btn sm" data-action="resolve-report" data-id="${id}" title="Mark as fixed">${uiIcon('check')} Resolved</button>`
+          : `<button class="btn sm" data-action="reopen-report" data-id="${id}">${uiIcon('refresh')} Reopen</button>`
+      }
+      <button class="icon-btn sm danger" data-action="delete-report" data-id="${id}" title="Delete report">${uiIcon('trash')}</button>
+    </div>
+  </article>`;
+}
+
+function renderReports() {
+  const f = state.reportFilter;
+  const open = openReports().length;
+  const counts = { open, resolved: state.reports.length - open, all: state.reports.length };
+  const list = state.reports.filter((r) => f === 'all' || r.status === f).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return `<div class="layout-single">
+    <section class="panel">
+      ${panelHead(
+        'Reports',
+        `<div class="seg">${[['open', 'Open'], ['resolved', 'Resolved'], ['all', 'All']]
+          .map(([v, l]) => `<button class="seg-btn ${f === v ? 'on' : ''}" data-action="report-filter" data-value="${v}">${l} <small>${counts[v]}</small></button>`)
+          .join('')}</div>`
+      )}
+      <div class="report-list">${
+        list.length
+          ? list.map(reportCard).join('')
+          : empty(f === 'open' ? 'No open reports. Players report a problem with the flag button on an item card.' : 'No reports here.')
+      }</div>
+    </section>
+  </div>`;
+}
+
+async function refreshReports() {
+  if (!canEdit()) return;
+  try {
+    state.reports = (await api('GET', '/api/reports')).reports || [];
+  } catch (e) {
+    return toast(`Could not load the reports: ${e.message}`, 'err');
+  }
+  if (state.view === 'reports') render();
+  else renderNav();
+}
+
+async function setReportStatus(id, status) {
+  try {
+    const updated = await api('PUT', `/api/reports/${encodeURIComponent(id)}`, { status });
+    state.reports = state.reports.map((r) => (r.id === id ? updated : r));
+    render();
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+function openReportDialog(item) {
+  const set = item.set ? state.setsById[item.set] : null;
+  const entry = openModal(
+    `<header class="modal-head"><span class="ph-diamond"></span><h2>Report a problem</h2>
+      <button class="icon-btn" data-close title="Close">${uiIcon('close')}</button></header>
+    <form class="modal-body report-form" autocomplete="off">
+      <div class="report-item" style="--r:${rarityOf(item).color}"><span class="piece-thumb">${thumb(item)}</span>
+        <div><b>${esc(item.name)}</b><small class="muted">${SLOT_TYPES[item.slot]?.label || esc(item.slot || '')}${set ? ` · ${esc(set.name)}` : ''}</small></div></div>
+      <label class="field"><span>What's wrong?</span><select name="kind">${REPORT_KINDS.map((k) => `<option value="${k.key}">${k.label}</option>`).join('')}</select></label>
+      <label class="field"><span>Details</span><textarea name="message" rows="4" maxlength="1000" placeholder="e.g. Crit damage is 12, not 10" autofocus></textarea></label>
+      <label class="field"><span>Your name <small>(optional, so the admin can ask you)</small></span><input name="by" maxlength="40" value="${esc(localGet('reportName') || '')}" placeholder="In-game name"></label>
+      <button type="submit" hidden></button>
+    </form>
+    <footer class="modal-foot">
+      <span class="spacer"></span>
+      <button class="btn" data-close>Cancel</button>
+      <button class="btn btn-primary" data-send>${uiIcon('flag')} Send report</button>
+    </footer>`,
+    'modal-report'
+  );
+  const form = entry.modal.querySelector('form');
+  const F = form.elements;
+  const sendBtn = entry.modal.querySelector('[data-send]');
+  const submit = async (e) => {
+    e?.preventDefault();
+    const message = F.message.value.trim();
+    if (!message) {
+      F.message.focus();
+      return toast('Describe the problem first.', 'warn');
+    }
+    sendBtn.disabled = true;
+    try {
+      await api('POST', '/api/reports', { itemId: item.id, kind: F.kind.value, message, by: F.by.value.trim() });
+      localSet('reportName', F.by.value.trim());
+      closeModal(entry);
+      toast('Report sent. Thanks!');
+      refreshReports();
+    } catch (err) {
+      sendBtn.disabled = false;
+      toast(err.message, 'err');
+    }
+  };
+  form.addEventListener('submit', submit);
+  sendBtn.addEventListener('click', submit);
 }
 
 // ---------------------------------------------------------------- optimizer view
@@ -832,6 +981,7 @@ const VIEWS = {
   sets: renderSets,
   optimizer: renderOptimizer,
   profile: renderProfile,
+  reports: renderReports,
 };
 
 // ---------------------------------------------------------------- modals
@@ -1158,6 +1308,13 @@ function openItemEditor(item, preset = {}) {
     `<header class="modal-head"><span class="ph-diamond"></span><h2>${isNew ? 'New item' : 'Edit item'}</h2>
       <button class="icon-btn" data-close title="Close">${uiIcon('close')}</button></header>
     <form class="modal-body item-form" autocomplete="off">
+      ${
+        isNew || !reportsFor(draft.id).length
+          ? ''
+          : `<div class="report-note">${uiIcon('flag')}<div>${reportsFor(draft.id)
+              .map((r) => `<p><b>${esc(reportKindLabel(r.kind))}:</b> ${esc(r.message)}${r.by ? ` <span class="muted">— ${esc(r.by)}</span>` : ''}</p>`)
+              .join('')}<small class="muted">Open reports · mark them resolved on the Reports page</small></div></div>`
+      }
       <div class="form-top">
         <div class="img-col">
           <div class="img-drop" tabindex="0" title="Click, drop or paste (Ctrl+V) an image">
@@ -1948,6 +2105,24 @@ function openSlotPicker(slotId) {
 const ACTIONS = {
   reload: () => loadData(true),
   'open-slot': (el) => openSlotPicker(el.dataset.slot),
+  'report-item': (el) => state.itemsById[el.dataset.id] && openReportDialog(state.itemsById[el.dataset.id]),
+  'report-filter': (el) => {
+    state.reportFilter = el.dataset.value;
+    render();
+  },
+  'resolve-report': (el) => setReportStatus(el.dataset.id, 'resolved'),
+  'reopen-report': (el) => setReportStatus(el.dataset.id, 'open'),
+  'delete-report': async (el) => {
+    const id = el.dataset.id;
+    if (!(await confirmDialog('Delete report', 'Delete this report for good?'))) return;
+    try {
+      await api('DELETE', `/api/reports/${encodeURIComponent(id)}`);
+    } catch (e) {
+      return toast(e.message, 'err');
+    }
+    state.reports = state.reports.filter((r) => r.id !== id);
+    render();
+  },
   'toggle-lock': (el) => {
     const id = el.dataset.slot;
     state.profile.locked[id] = !state.profile.locked[id];
@@ -2097,7 +2272,10 @@ const ACTIONS = {
 };
 
 // Actions that change items or sets on the server.
-const ADMIN_ACTIONS = new Set(['new-item', 'new-item-in-set', 'edit-item', 'dup-item', 'delete-item', 'new-set', 'edit-set', 'delete-set', 'import-shots']);
+const ADMIN_ACTIONS = new Set([
+  'new-item', 'new-item-in-set', 'edit-item', 'dup-item', 'delete-item', 'new-set', 'edit-set', 'delete-set', 'import-shots',
+  'resolve-report', 'reopen-report', 'delete-report',
+]);
 
 document.addEventListener('click', (e) => {
   const nav = e.target.closest('[data-nav]');
@@ -2191,6 +2369,7 @@ async function loadData(announce = false) {
     const [me, d] = await Promise.all([api('GET', '/api/me'), api('GET', '/api/data')]);
     state.me = me;
     document.body.classList.toggle('read-only', !canEdit());
+    state.reports = canEdit() ? await api('GET', '/api/reports').then((r) => r.reports || [], () => []) : [];
     texturePacks = null;
     state.items = d.items || [];
     state.sets = d.sets || [];

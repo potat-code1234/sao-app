@@ -19,7 +19,7 @@ The repo deploys with Coolify's **Docker Compose** build pack, using [docker-com
   | Variable | Login |
   |---|---|
   | `ADMIN_PASSWORD` (+ `ADMIN_USER`, default `admin`) | Admin: can change everything. Required; the container refuses to start without it. |
-  | `VIEWER_PASSWORD` (+ `VIEWER_USER`, default `viewer`) | Read-only: sees the items and sets and can use the equipment page and the optimizer, but can't change items or sets. Leave it empty to turn this login off. |
+  | `VIEWER_PASSWORD` (+ `VIEWER_USER`, default `viewer`) | Read-only: sees the items and sets and can use the equipment page and the optimizer, but can't change items or sets. They can report a problem with an item (flag button on its card) for the admin to fix. Leave it empty to turn this login off. |
 
   User names aren't case-sensitive. Logins last 30 days; changing a password logs everyone out. `/healthz` stays open for health checks.
 - **Textures:** they are part of the image. After running `node import-textures.js` locally, commit and push the `Textures/` folder and redeploy. The script copies the accessory, armor and rune textures from the server's resource pack and Minecraft's armor icons from the game, and draws icons for helmets that only exist as 3D models ([render-model.js](render-model.js), named `…_3d`).
@@ -44,6 +44,7 @@ Per screenshot the reader finds the name, minimum level, rarity (from the frame 
 | **Items** | Add, edit, duplicate or delete items, filter them, and mark which ones you own. Every item can have an image: click, drag a file onto it, or paste with Ctrl+V. Small textures such as 16×16 Minecraft icons stay pixel-sharp. |
 | **Sets** | Set bonuses for any number of pieces (2, 3, 4, 5…). Choose whether the bonuses **stack** (2pc + 4pc both apply) or only the **highest tier** applies. |
 | **Optimizer** | Weights for each stat, with presets, plus optional **Min** and **Cap** values. Press *Find best gear* to see the 5 best builds, each with its changes compared to what you wear now. |
+| **Reports** (admin) | Problem reports sent with the flag button on an item card, by any login: what is wrong (stats, image, set, level, other), the message and the reporter's name if they gave one. Click the item to fix it (its editor shows the open reports), then mark the report *Resolved*. The number of open reports shows on the tab. |
 | **Base Stats** | Your stats with no gear on. They depend on your class and skill-tree points, so you always enter them by hand. They start empty, and you update them when you switch class or respec. |
 
 ## How the score works
@@ -59,6 +60,7 @@ Items/Accessories/<id>.json     one file per item
 Items/Accessories/images/       item images (<id>.png …)
 Items/Sets/<id>.json            one file per set
 Data/profile.json               the admin's starting profile (player profiles are saved in the browser)
+Data/reports.json               problem reports sent from the item cards
 ```
 
 You can edit these files by hand, then press **Reload** in the app. The file name (without `.json`) is the item or set id.
