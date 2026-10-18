@@ -9,7 +9,12 @@ const norm = (s) =>
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
 const statsObj = (lines) => Object.fromEntries(lines.filter((l) => l.value).map((l) => [l.key, l.value]));
-const fmtStats = (s) => Object.entries(s || {}).map(([k, v]) => `${k} ${v}`).join(', ') || 'none';
+const fmtStats = (s) =>
+  Object.entries(s || {})
+    .sort(([a], [b]) => a.localeCompare(b)) // the same stats in another order are not a change
+    .map(([k, v]) => `${k} ${v}`)
+    .join(', ') || 'none';
+const sameStats = (a = {}, b = {}) => Object.keys(a).length === Object.keys(b).length && Object.keys(a).every((k) => Number(a[k]) === Number(b[k]));
 const fmtBonuses = (b) => (b || []).map((t) => `[${t.pieces}] ${fmtStats(t.stats)}${t.effect ? ` · ${t.effect}` : ''}`).join('  ');
 
 function changes(before, after, fields) {
@@ -19,8 +24,9 @@ function changes(before, after, fields) {
 }
 
 /**
- * readings: [{ file, reading } | { file, error }]. Returns
- * { sets: [{ key, id?, before?, body, changes }], items: [{ file, id?, before?, body, changes }], skipped: [{ file, name, reason }] }.
+ * readings: [{ file, reading } | { file, error }]; reading.target ("new" or an item id) overrides which item it saves to.
+ * Returns { sets: [{ key, id?, before?, body, changes }], items: [{ file, id?, before?, body, changes, sameName }],
+ * skipped: [{ file, name, reason }] }, where sameName lists the existing items with that name.
  * New sets get key "new:<name>"; item bodies refer to sets by id or by that key until applyPlan saves them.
  */
 export function planImport(readings, items, sets) {
@@ -41,14 +47,22 @@ export function planImport(readings, items, sets) {
       skipped.push({ file, name: r.name, reason: 'not equipment' });
       continue;
     }
-    const existing = items.find((i) => norm(i.name) === norm(r.existing_item) || norm(i.name) === norm(r.name));
+    // Several items may share a name (different versions of an item). r.target picks one: "new" adds
+    // another, an id updates that item. By default the one with the same stats is updated (the same
+    // item seen again); with different stats the tooltip becomes a new item.
+    const sameName = items.filter((i) => norm(i.name) === norm(r.name) || (r.existing_item && norm(i.name) === norm(r.existing_item)));
+    const existing =
+      r.target === 'new' ? null : r.target ? items.find((i) => i.id === r.target) || null : sameName.find((i) => sameStats(i.stats, statsObj(r.stats))) || null;
     let setKey = existing ? existing.set : null;
     if (r.set) {
-      // the same set by name, else the set the item already belongs to (renamed to the tooltip's name)
+      // the same set by name, else the set of this item or of items with its name (renamed to the
+      // tooltip's name), else a set this import already renames or creates under that name
       const set =
         sets.find((s) => norm(s.name) === norm(r.set.existing_set) || norm(s.name) === norm(r.set.name)) ||
-        sets.find((s) => s.id === existing?.set);
-      setKey = set ? set.id : `new:${norm(r.set.name)}`;
+        sets.find((s) => s.id === existing?.set) ||
+        sets.find((s) => sameName.some((i) => i.set === s.id));
+      const planned = [...setPlans.values()].find((p) => norm(p.body.name) === norm(r.set.name));
+      setKey = set ? set.id : planned ? planned.key : `new:${norm(r.set.name)}`;
       if (!setPlans.has(setKey)) {
         const body = {
           ...(set || { cumulative: true, notes: '' }),
@@ -74,7 +88,7 @@ export function planImport(readings, items, sets) {
       set: setKey,
       ...(r.unmapped.length ? { effect: r.unmapped.join(', ') } : {}),
     };
-    itemPlans.push({ file, id: existing?.id, before: existing, body });
+    itemPlans.push({ file, id: existing?.id, before: existing, body, sameName });
   }
 
   const setName = (key) => setPlans.get(key)?.body.name ?? sets.find((s) => s.id === key)?.name ?? key;

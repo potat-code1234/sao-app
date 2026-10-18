@@ -167,6 +167,8 @@ const rarityOf = (item) => RARITY_MAP[item?.rarity] || RARITY_MAP.common;
 // Minimum level to equip: the item's own, else its set's; null when unknown.
 const levelOf = (item) => item.level || state.setsById[item.set]?.level || null;
 const levelTag = (item) => (levelOf(item) ? `<span class="tag" title="Minimum level to equip">Lv ${levelOf(item)}</span>` : '');
+// "+5% Physical dmg., +2.5% Life steal": tells apart items that share a name
+const statLine = (stats) => Object.entries(stats || {}).map(([k, v]) => `${fmtDelta(k, v)} ${STAT_MAP[k]?.label || k}`).join(', ') || 'no stats';
 // Small textures (Minecraft-style 16x16) are scaled up with crisp pixels.
 const PX = ` onload="if(this.naturalWidth<=64)this.classList.add('px')"`;
 const imgUrl = (item) => `/item-images/${encodeURIComponent(item.image)}?v=${item.imageVersion || 0}`;
@@ -1597,6 +1599,14 @@ function openScreenshotImport() {
       <div class="rv-img" title="Click to enlarge"><img src="${c.image}" alt=""><span class="muted small">${esc(c.file)}</span></div>
       <div class="rv-form">
         <div class="rv-status"></div>
+        ${
+          c.sameName.length
+            ? `<label class="field"><span>Save as <small>(${c.sameName.length === 1 ? 'an item with this name already exists' : `${c.sameName.length} items with this name already exist`})</small></span>
+              <select data-f="target"><option value="new" ${r.target === 'new' ? 'selected' : ''}>A new item</option>${c.sameName
+                .map((i) => `<option value="${esc(i.id)}" ${r.target === i.id ? 'selected' : ''}>Update ${esc(i.name)} · ${esc(RARITY_MAP[i.rarity]?.label || i.rarity)} · Lv ${levelOf(i) ?? '—'} · ${esc(statLine(i.stats))}</option>`)
+                .join('')}</select></label>`
+            : ''
+        }
         ${c.warnings.length ? `<ul class="rv-warn">${c.warnings.map((w) => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}
         <div class="rv-grid">
           <label class="field"><span>Name</span><input data-f="name" value="${esc(r.name)}"></label>
@@ -1620,7 +1630,7 @@ function openScreenshotImport() {
     const it = p.items[0];
     const set = p.sets[0];
     const what = !it.before
-      ? `<span class="tag new">New item</span>`
+      ? `<span class="tag new">New item</span>${it.sameName.length ? ' <span class="muted small">(same name as an existing item)</span>' : ''}`
       : it.changes.length
         ? `<span class="tag upd">Updates ${esc(it.before.name)}</span> <span class="muted small">${it.changes.map((ch) => esc(ch.field)).join(', ')}</span>`
         : `<span class="tag">Already up to date</span>`;
@@ -1649,8 +1659,11 @@ function openScreenshotImport() {
   };
   const addCard = (t) => {
     const r = structuredClone(t.reading);
-    const skipped = planImport([{ file: t.file, reading: r }], state.items, state.sets).skipped[0];
-    const c = { file: t.file, image: t.image, warnings: t.warnings || [], r, skip: skipped?.reason || null, checked: false };
+    const p = planImport([{ file: t.file, reading: r }], state.items, state.sets);
+    // items that already have this name: the card lets you pick one to update, or add a new one
+    const sameName = p.items[0]?.sameName || [];
+    if (sameName.length) r.target = p.items[0].id || 'new';
+    const c = { file: t.file, image: t.image, warnings: t.warnings || [], r, sameName, skip: p.skipped[0]?.reason || null, checked: false };
     cards.push(c);
     list.insertAdjacentHTML('beforeend', cardHtml(c, cards.length - 1));
     if (!c.skip) refreshStatus(cards.length - 1);
@@ -1723,6 +1736,7 @@ function openScreenshotImport() {
     else if (f === 'effect') c.r.unmapped = t.value.trim() ? [t.value.trim()] : [];
     else if (f === 'level') c.r.level = num(t.value);
     else if (f === 'slot') c.r.slot = t.value || null;
+    else if (f === 'target') c.r.target = t.value;
     else if (f === 'checked') {
       c.checked = t.checked;
       cardEl.classList.toggle('checked', c.checked);
