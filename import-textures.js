@@ -10,11 +10,13 @@ const CLIENT = path.join(process.env.APPDATA || '', '.Triggers Client');
 const ASSETS = process.argv[2] || path.join(CLIENT, 'instances', 'Sword Art Online', 'resourcepacks', 'sao', 'assets');
 const OUT = path.join(__dirname, 'Textures');
 
-// Armor among the pack's item icons: 2D item models (their "layer0" texture) and *_icon.png files. 3D armor
-// models are left out, their texture is an unfolded sheet, not an icon. So are the server's own pack (already
-// in "nerfs"), inventory slot placeholders, accessories and a few unrelated namespaces.
-const ARMOR = /helmet|chestplate|leggings|boots|shield|crown|armor|(^|_)hat($|_)/i;
-const NOT_ARMOR = /^(nerfs|minecraft|lk|scenes|mae|elitecreatures|shizuart_furnitures)\/|\/(mmoinventory|accessory)\//;
+// Armor icons in the pack, found by name and size: inventory icons are square and at most 32px, while 3D
+// armor models use bigger, unfolded texture sheets. Left out: worn-armor skins ("layer"), glow overlays ("_e"),
+// skill and GUI images, bare "helmet"/"boots" slot placeholders, the server's own pack (already in "nerfs"),
+// cosmetic packs (3D hats) and a few sheets whose names look like icons.
+const ARMOR = /helmet|chestplate|leggings|boots|shield|crown|hood|(^|_)hat($|_|\d)/i;
+const NOT_ARMOR_NAME = /layer|_e$|^icon_|emissive|glow|_overlay$|^(helmet|chestplate|leggings|boots|shield|empty)$|^(bone_shield|hat_lovestruck_em)$/i;
+const NOT_ARMOR_PATH = /^(nerfs|lk|scenes|elitecreatures|shizuart_furnitures|cosmetic_pack\w*|lanshan_cos_\w+)\/|\/(gui|font|ui|abilities|skills?|mmoinventory|equipment_room|accessory|particles?|entity)\//i;
 const VANILLA_ARMOR = /^assets\/minecraft\/textures\/item\/((leather|chainmail|iron|golden|diamond|netherite)_(helmet|chestplate|leggings|boots)|turtle_helmet)\.png$/;
 
 // Textures folder -> sources: folders or single .png files inside the pack, or functions returning [{ name, data }].
@@ -22,7 +24,7 @@ const VANILLA_ARMOR = /^assets\/minecraft\/textures\/item\/((leather|chainmail|i
 // "accessoires": the coins, and the Occult Skull (runes/ritual_skull).
 const SOURCES = {
   nerfs: ['nerfs/textures/accessoires', 'nerfs/textures/coins', 'nerfs/textures/runes/ritual_skull.png'],
-  armor: ['hsur/textures/custom/items/armor', 'mmoitems_pack/textures/hyronic_pack/items/armor', armorIcons, vanillaArmor],
+  armor: [armorIcons, vanillaArmor],
   runes: ['nerfs/textures/runes'],
   hsur: ['hsur/textures/custom/items/accessory'],
   mctrinketsringsvol1: ['mctrinketsringsvol1/textures/item'],
@@ -39,35 +41,19 @@ function walk(dir, fn) {
 }
 
 function armorIcons() {
-  const found = new Map(); // file -> name
-  const rel = (p) => path.relative(ASSETS, p).split(path.sep).join('/');
+  const found = [];
   walk(ASSETS, (p) => {
-    const r = rel(p);
-    if (NOT_ARMOR.test(r)) return;
-    if (/_icon\.png$/i.test(r) && ARMOR.test(path.basename(r))) {
-      found.set(p, path.basename(r, '.png').replace(/_icon$/i, ''));
-    } else if (r.includes('/models/') && r.endsWith('.json')) {
-      let model;
-      try {
-        model = JSON.parse(fs.readFileSync(p, 'utf8'));
-      } catch {
-        return;
-      }
-      const tex = model.textures?.layer0;
-      if (!tex || !/item\/(paper|handheld|generated)$/.test(model.parent || '')) return;
-      const [ns, t] = tex.includes(':') ? tex.split(':') : ['minecraft', tex];
-      const file = path.join(ASSETS, ns, 'textures', `${t}.png`);
-      if (NOT_ARMOR.test(`${ns}/textures/${t}`) || !fs.existsSync(file)) return;
-      if (ARMOR.test(path.basename(t)) || ARMOR.test(path.basename(r, '.json'))) found.set(file, path.basename(t));
-    }
+    if (!p.endsWith('.png')) return;
+    const rel = path.relative(ASSETS, p).split(path.sep).join('/');
+    const name = path.basename(rel, '.png').replace(/_icon$/i, '');
+    if (ARMOR.test(name) && !NOT_ARMOR_NAME.test(name) && !NOT_ARMOR_PATH.test(rel)) found.push({ name, data: fs.readFileSync(p), from: rel.split('/')[0] });
   });
-  return [...found].map(([file, name]) => ({ name, data: fs.readFileSync(file), from: rel(file).split('/')[0] }));
+  return found;
 }
 
-// Only true icons go in a pack with a filter: for armor, square images that are not worn-armor skins
-// ("layer"), animated strips or bare "helmet"/"boots" slot placeholders.
+// Only true icons go in a pack with a filter: for armor, square images of at most 32px (vanilla icons included).
 const FILTERS = {
-  armor: ({ name, data }) => data.readUInt32BE(16) === data.readUInt32BE(20) && !/layer|^(helmet|chestplate|leggings|boots|empty)$/i.test(name),
+  armor: ({ data }) => data.readUInt32BE(16) === data.readUInt32BE(20) && data.readUInt32BE(16) <= 32,
 };
 
 // Minecraft's armor icons, read from the newest game .jar of the Triggers Client (or the official launcher).
