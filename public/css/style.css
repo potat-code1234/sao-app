@@ -986,7 +986,8 @@ form.sao-dialog-msg { text-align: left; }
 .tex-group { flex: none; }
 .tex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 8px; margin-top: 10px; }
 .tex-cell { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; padding: 8px 4px 6px; background: #fff; border: 1px solid var(--line); border-radius: 4px; color: var(--ink-2); cursor: pointer; transition: border-color 0.12s, box-shadow 0.12s; }
-.tex-cell img { width: 48px; height: 48px; padding: 5px; box-sizing: content-box; object-fit: contain; image-rendering: pixelated; background: var(--stage); border-radius: 3px; }
+/* "cover" from the top shows the first frame of animated (vertical strip) textures */
+.tex-cell img { width: 48px; height: 48px; padding: 5px; box-sizing: content-box; object-fit: cover; object-position: top; image-rendering: pixelated; background: var(--stage); border-radius: 3px; }
 .tex-cell span { width: 100%; font: 600 11.5px/1.2 var(--font); text-align: center; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .tex-cell:hover, .tex-cell:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(246, 162, 26, 0.22); }
 .tex-cell.current { background: #f1f7ff; border-color: var(--blue); box-shadow: 0 0 0 2px #b6d6f6; }

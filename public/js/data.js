@@ -70,6 +70,8 @@ export const SLOT_MAP = Object.fromEntries(SLOTS.map((s) => [s.id, s]));
 // Texture folders copied from the server resource pack by import-textures.js, in display order.
 export const TEXTURE_PACKS = {
   nerfs: 'Server accessories',
+  armor: 'Armor',
+  runes: 'Runes',
   hsur: 'HSUR accessories',
   mctrinketsringsvol1: 'Rings vol. 1',
   mcfantasytrinketsvol2: 'Fantasy necklaces vol. 2',

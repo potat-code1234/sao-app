@@ -1110,7 +1110,7 @@ async function openTexturePicker(current, onPick) {
     try {
       const res = await fetch(texUrl(cell.dataset.tex));
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-      const dataUrl = await fileToDataUrl(await res.blob());
+      const dataUrl = await firstFrame(await fileToDataUrl(await res.blob()));
       localSet('texGroup', cell.closest('[data-group]').dataset.group);
       onPick(cell.dataset.tex, dataUrl);
       closeModal(entry);
@@ -1118,6 +1118,23 @@ async function openTexturePicker(current, onPick) {
       toast(`Could not load texture: ${err.message}`, 'err');
     }
   });
+}
+
+// Animated Minecraft textures are vertical strips of square frames: keep the first frame.
+async function firstFrame(dataUrl) {
+  const img = await new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = () => rej(new Error('Could not read the texture'));
+    i.src = dataUrl;
+  });
+  const w = img.naturalWidth;
+  const h = img.naturalHeight;
+  if (h < w * 2 || h % w) return dataUrl;
+  const c = document.createElement('canvas');
+  c.width = c.height = w;
+  c.getContext('2d').drawImage(img, 0, 0, w, w, 0, 0, w, w);
+  return c.toDataURL('image/png');
 }
 
 // ---- item editor
