@@ -22,7 +22,7 @@ The repo deploys with Coolify's **Docker Compose** build pack, using [docker-com
   | `VIEWER_PASSWORD` (+ `VIEWER_USER`, default `viewer`) | Read-only: sees the items and sets and can use the equipment page and the optimizer, but can't change items or sets. Leave it empty to turn this login off. |
 
   User names aren't case-sensitive. Logins last 30 days; changing a password logs everyone out. `/healthz` stays open for health checks.
-- **Textures:** they are part of the image. After running `node import-textures.js` locally, commit and push the `Textures/` folder and redeploy.
+- **Textures:** they are part of the image. After running `node import-textures.js` locally, commit and push the `Textures/` folder and redeploy. The script copies the accessory, armor and rune textures from the server's resource pack and Minecraft's armor icons from the game, and draws icons for helmets that only exist as 3D models ([render-model.js](render-model.js), named `…_3d`).
 
 Without Coolify: `APP_PASSWORD=… docker compose up -d --build`, then open port 3077 of the container (add a `ports:` mapping or put a reverse proxy in front).
 

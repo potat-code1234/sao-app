@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 const crypto = require('crypto');
+const { renderItemModel } = require('./render-model');
 
 const CLIENT = path.join(process.env.APPDATA || '', '.Triggers Client');
 const ASSETS = process.argv[2] || path.join(CLIENT, 'instances', 'Sword Art Online', 'resourcepacks', 'sao', 'assets');
@@ -17,14 +18,18 @@ const OUT = path.join(__dirname, 'Textures');
 const ARMOR = /helmet|chestplate|leggings|boots|shield|crown|hood|(^|_)hat($|_|\d)/i;
 const NOT_ARMOR_NAME = /layer|_e$|^icon_|emissive|glow|_overlay$|^(helmet|chestplate|leggings|boots|shield|empty)$|^(bone_shield|hat_lovestruck_em)$/i;
 const NOT_ARMOR_PATH = /^(nerfs|lk|scenes|elitecreatures|shizuart_furnitures|cosmetic_pack\w*|lanshan_cos_\w+)\/|\/(gui|font|ui|abilities|skills?|mmoinventory|equipment_room|accessory|particles?|entity)\//i;
-const VANILLA_ARMOR = /^assets\/minecraft\/textures\/item\/((leather|chainmail|iron|golden|diamond|netherite)_(helmet|chestplate|leggings|boots)|turtle_helmet)\.png$/;
+// Helmets that only exist as 3D models get an icon rendered from the model. Mob model parts, cosmetic hats and
+// furniture are left out.
+const HELMET_MODEL = /helmet|casque|hood|capuche|crown|couronne/i;
+const NOT_HELMET_MODEL = /^(modelengine|elitecreatures|shizuart_furnitures|cosmetic_pack\w*|lanshan_cos_\w+|nogs_menagerie|mimix_\w+|littleroom_\w+|yungwilder|ghostpepper_\w+|ero_\w+)\/|cosmetic/i;
+const VANILLA_ARMOR =/^assets\/minecraft\/textures\/item\/((leather|chainmail|iron|golden|diamond|netherite)_(helmet|chestplate|leggings|boots)|turtle_helmet)\.png$/;
 
 // Textures folder -> sources: folders or single .png files inside the pack, or functions returning [{ name, data }].
 // mmoitems_pack's accessories are duplicates of hsur's. The server keeps some accessories outside
 // "accessoires": the coins, and the Occult Skull (runes/ritual_skull).
 const SOURCES = {
   nerfs: ['nerfs/textures/accessoires', 'nerfs/textures/coins', 'nerfs/textures/runes/ritual_skull.png'],
-  armor: [armorIcons, vanillaArmor],
+  armor: [armorIcons, vanillaArmor, helmetModels],
   runes: ['nerfs/textures/runes'],
   hsur: ['hsur/textures/custom/items/accessory'],
   mctrinketsringsvol1: ['mctrinketsringsvol1/textures/item'],
@@ -51,9 +56,36 @@ function armorIcons() {
   return found;
 }
 
-// Only true icons go in a pack with a filter: for armor, square images of at most 32px (vanilla icons included).
+// Icons rendered from 3D helmet models, named <model>_3d ("helmet" alone gets its pack's name first).
+function helmetModels() {
+  const found = [];
+  walk(ASSETS, (p) => {
+    const rel = path.relative(ASSETS, p).split(path.sep).join('/');
+    const name = path.basename(p, '.json');
+    if (!p.endsWith('.json') || !rel.includes('/models/') || !HELMET_MODEL.test(name) || NOT_HELMET_MODEL.test(rel)) return;
+    let model;
+    try {
+      model = JSON.parse(fs.readFileSync(p, 'utf8'));
+    } catch {
+      return;
+    }
+    if (!Array.isArray(model.elements)) return;
+    const ns = rel.split('/')[0];
+    try {
+      const data = renderItemModel(ASSETS, p, 128);
+      const base = /^(helmet|hood|crown)$/i.test(name) ? `${ns.replace(/_?set$/i, '')}_${name}` : name;
+      if (data) found.push({ name: `${base}_3d`, data, from: ns, rendered: true });
+    } catch (e) {
+      console.warn(`  skip ${rel}: ${e.message}`);
+    }
+  });
+  return found;
+}
+
+// Only true icons go in a pack with a filter: for armor, square images of at most 32px (vanilla icons
+// included), plus the icons rendered from 3D models.
 const FILTERS = {
-  armor: ({ data }) => data.readUInt32BE(16) === data.readUInt32BE(20) && data.readUInt32BE(16) <= 32,
+  armor: ({ data, rendered }) => rendered || (data.readUInt32BE(16) === data.readUInt32BE(20) && data.readUInt32BE(16) <= 32),
 };
 
 // Minecraft's armor icons, read from the newest game .jar of the Triggers Client (or the official launcher).
