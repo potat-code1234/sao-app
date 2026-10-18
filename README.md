@@ -22,19 +22,19 @@ The repo deploys with Coolify's **Docker Compose** build pack, using [docker-com
   | `VIEWER_PASSWORD` (+ `VIEWER_USER`, default `viewer`) | Read-only: sees the items and sets and can use the equipment page and the optimizer, but can't change items or sets. Leave it empty to turn this login off. |
 
   User names aren't case-sensitive. Logins last 30 days; changing a password logs everyone out. `/healthz` stays open for health checks.
-- **Import from screenshots:** set `ANTHROPIC_API_KEY` (a Claude API key) in Coolify to turn it on. See [Import items from screenshots](#import-items-from-screenshots).
 - **Textures:** they are part of the image. After running `node import-textures.js` locally, commit and push the `Textures/` folder and redeploy.
 
 Without Coolify: `APP_PASSWORD=… docker compose up -d --build`, then open port 3077 of the container (add a `ports:` mapping or put a reverse proxy in front).
 
 ## Import items from screenshots
 
-Claude reads in-game item tooltips (name, minimum level, rarity from the frame colour, stats, category, set bonuses) and the app turns them into items and sets. Only **English** tooltips are imported: French ones are skipped, and so are runes and other items that have no equipment slot. An item or set that already exists is updated rather than duplicated, keeping its image, texture and notes. Equipment without a category, such as gifts, lanterns and masks, becomes an artifact.
+Item tooltips are read on your PC with free, offline text recognition (OCR), then you check every item in the app before anything is saved. Nothing is sent to an online service.
 
-- **In the app:** as admin, *Items › Import screenshots*. Drop, paste (Ctrl+V) or choose screenshots, press *Read screenshots*, check the list of changes, then *Save*.
-- **From the command line:** `node import-items.mjs <screenshots or folders> --url https://your-app --user admin --password …`. Add `--dry-run` to only see the changes, or `--yes` to save without asking. Run it with no arguments for the full option list at the top of the file.
+1. **Install once:** Python 3.10 or newer (for example `winget install Python.Python.3.12`), then `pip install -r requirements.txt` in this folder.
+2. **Read the screenshots:** `python read_tooltips.py <screenshots or folder>`. It writes `tooltips.json`: for each screenshot, the name, minimum level, rarity (from the frame colour), stats, category and set bonuses, a small copy of the image, and warnings about anything uncertain.
+3. **Check and save:** as admin, *Items › Import screenshots*, load `tooltips.json`. Each item is shown next to its screenshot with editable fields: fix what the OCR got wrong, tick *Checked*, then *Save checked*. Only checked items are saved.
 
-Either way the server does the reading, so it needs `ANTHROPIC_API_KEY` in its environment. The Docker image installs the packages for it; when running locally, run `npm install` once and set the key before `start.bat`. Each screenshot is one Claude request (`claude-opus-5-5`), roughly a few cents.
+Only **English** tooltips are imported: French ones are skipped, and so are runes and other items that have no equipment slot. An item or set that already exists is updated rather than duplicated, keeping its image, texture and notes. Equipment without a category, such as gifts, lanterns and masks, becomes an artifact. Stats the app has no field for (block chance, parry chance, knockback resistance…) are kept as effect text.
 
 ## Pages
 

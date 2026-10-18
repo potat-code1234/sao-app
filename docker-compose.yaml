@@ -9,7 +9,6 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - VIEWER_USER=${VIEWER_USER}
       - VIEWER_PASSWORD=${VIEWER_PASSWORD}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     volumes:
       - sao-gear-data:/data
     expose:

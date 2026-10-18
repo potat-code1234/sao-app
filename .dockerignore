@@ -9,4 +9,5 @@ README.md
 start.bat
 import-textures.js
 accessoires.txt
-import-items.mjs
+read_tooltips.py
+requirements.txt

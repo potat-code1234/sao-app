@@ -1529,85 +1529,141 @@ async function deleteSet(id) {
   }
 }
 
-// ---- import items from tooltip screenshots (the server reads them with Claude)
+// ---- import items from tooltip screenshots: read_tooltips.py reads them on your PC, you check them here
 function openScreenshotImport() {
-  const shots = []; // { name, url, reading?, error? }
-  let plan = null;
-  let busy = false;
+  let cards = []; // { file, image, warnings, r: reading being edited, skip: reason | null, checked }
   const entry = openModal(
     `<header class="modal-head"><span class="ph-diamond"></span><h2>Import screenshots</h2>
       <div class="ph-right"><button class="icon-btn" data-close title="Close">${uiIcon('close')}</button></div></header>
     <div class="modal-body">
-      ${
-        state.me.screenshotImport
-          ? ''
-          : '<div class="warn-line">Reading screenshots is not set up on this server: add <code>ANTHROPIC_API_KEY</code> to its environment variables and restart it.</div>'
-      }
-      <p class="hint">Add screenshots of item tooltips: drop them here, paste them (Ctrl+V) or choose files. Claude reads the name, level, rarity,
-        stats and set bonuses. Only <b>English</b> tooltips are imported; French ones and runes are skipped. Nothing is saved until you press <b>Save</b>.</p>
-      <label class="shot-drop" tabindex="0">${uiIcon('image')}<span>Drop, paste or <u>choose</u> screenshots</span>
-        <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden></label>
-      <div class="shot-list"></div>
-      <div class="import-plan"></div>
+      <ol class="hint review-steps">
+        <li>On your PC, run <code>python read_tooltips.py &lt;screenshots or folder&gt;</code>. It reads the tooltips with free OCR and writes <code>tooltips.json</code>.</li>
+        <li>Load that file here. Compare each item with its screenshot, fix what the OCR got wrong, and tick <b>Checked</b>.</li>
+        <li>Press <b>Save checked</b>: only checked items are imported. French tooltips and runes are skipped.</li>
+      </ol>
+      <label class="shot-drop" tabindex="0">${uiIcon('copy')}<span>Drop or <u>choose</u> tooltips.json</span>
+        <input type="file" accept=".json,application/json" hidden></label>
+      <div class="review-list"></div>
+      <datalist id="rv-sets">${state.sets.map((s) => `<option value="${esc(s.name)}">`).join('')}</datalist>
     </div>
     <footer class="modal-foot">
       <span class="import-status muted small"></span>
       <span class="spacer"></span>
       <button class="btn" data-close>Cancel</button>
-      <button class="btn" data-read>Read screenshots</button>
-      <button class="btn btn-primary" data-save>${uiIcon('check')} Save</button>
+      <button class="btn btn-primary" data-save>${uiIcon('check')} Save checked</button>
     </footer>`,
     'modal-import'
   );
   const m = entry.modal;
+  const list = m.querySelector('.review-list');
   const drop = m.querySelector('.shot-drop');
-  const status = (text) => (m.querySelector('.import-status').textContent = text);
 
-  const planRows = () => {
-    if (!plan) return '';
-    const row = (badge, cls, title, sub, changes = []) =>
-      `<div class="plan-row ${cls}"><span class="plan-badge">${badge}</span><div class="plan-main"><b>${esc(title)}</b>${sub ? ` <span class="muted small">${esc(sub)}</span>` : ''}
-        ${changes.map((c) => `<div class="plan-change"><span>${esc(c.field)}</span> ${esc(c.before || '—')} → <b>${esc(c.after || '—')}</b></div>`).join('')}</div></div>`;
-    const rows = [
-      ...plan.sets.filter((s) => !s.before || s.changes.length).map((s) => (s.before ? row('Update', 'upd', s.before.name, 'set', s.changes) : row('New', 'new', s.body.name, `set · ${s.body.bonuses.length} tiers`))),
-      ...plan.items.map((it) =>
-        !it.before
-          ? row('New', 'new', it.body.name, `${it.body.slot} · ${it.body.rarity} · Lv ${it.body.level ?? '—'} · ${it.file}`)
-          : it.changes.length
-            ? row('Update', 'upd', it.before.name, it.file, it.changes)
-            : row('Same', 'same', it.body.name, `${it.file} · already up to date`)
-      ),
-      ...plan.skipped.map((s) => row('Skip', 'skip', s.name || s.file, `${s.file} · ${s.reason}`)),
-    ];
-    return `<div class="section-label">What will change <small>${planSize(plan)} save(s)</small></div>${rows.join('')}`;
-  };
-  const paint = () => {
-    m.querySelector('.shot-list').innerHTML = shots
+  // the reading as planImport expects it: an unnamed set means no set
+  const toReading = (c) => ({ ...c.r, set: c.r.set && c.r.set.name.trim() ? c.r.set : null });
+  const linesAt = (c, path) => (path === 'stats' ? c.r.stats : c.r.set.bonuses[+path.split(':')[1]].stats);
+
+  const statRows = (lines, path) =>
+    lines
       .map(
-        (s, i) => `<figure class="shot ${s.error ? 'err' : s.reading ? 'ok' : ''}" title="${esc(s.error || s.name)}">
-          <img src="${s.url}" alt=""><figcaption>${esc(s.name)}</figcaption>
-          ${busy ? '' : `<button type="button" class="img-remove" data-remove="${i}" title="Remove">${uiIcon('close')}</button>`}</figure>`
+        (l, i) => `<div class="rv-stat" data-path="${path}" data-i="${i}">
+          <select data-f="key">${STATS.map((s) => `<option value="${s.key}" ${s.key === l.key ? 'selected' : ''}>${s.label}</option>`).join('')}</select>
+          <input type="number" step="any" data-f="value" value="${esc(l.value)}">
+          <button type="button" class="icon-btn sm" data-del title="Remove">${uiIcon('close')}</button></div>`
       )
       .join('');
-    m.querySelector('.import-plan').innerHTML = planRows();
-    m.querySelector('[data-read]').disabled = busy || !shots.some((s) => !s.reading && !s.error);
-    m.querySelector('[data-save]').disabled = busy || !plan || !planSize(plan);
-  };
-  const addFiles = async (files) => {
-    for (const file of [...files].filter((f) => /^image\/(png|jpeg|webp|gif)$/.test(f.type))) {
-      const url = await new Promise((res, rej) => {
-        const fr = new FileReader();
-        fr.onload = () => res(fr.result);
-        fr.onerror = () => rej(fr.error);
-        fr.readAsDataURL(file);
-      });
-      shots.push({ name: file.name || `pasted-${shots.length + 1}.png`, url });
+  const tiersHtml = (c) =>
+    (c.r.set?.bonuses || [])
+      .map(
+        (t, ti) => `<div class="rv-tier" data-t="${ti}">
+          <div class="rv-tier-head"><label class="pieces-in"><input type="number" min="1" max="13" step="1" data-f="pieces" value="${esc(t.pieces)}"><span>pieces</span></label>
+            <button type="button" class="icon-btn sm danger" data-del-tier title="Remove tier">${uiIcon('trash')}</button></div>
+          ${statRows(t.stats, `tier:${ti}`)}
+          <div class="rv-tier-foot"><button type="button" class="btn sm ghost" data-add="tier:${ti}">${uiIcon('plus')} Stat</button>
+            <input class="grow" data-f="tierEffect" value="${esc(t.unmapped.join(', '))}" placeholder="Effect text (optional)"></div>
+        </div>`
+      )
+      .join('');
+  const cardHtml = (c, idx) => {
+    if (c.skip) {
+      return `<article class="rv-card skipped" data-idx="${idx}"><div class="rv-img"><img src="${c.image}" alt=""></div>
+        <div class="rv-form"><b>${esc(c.r.name || c.file)}</b> <span class="muted small">${esc(c.file)}</span><div class="muted">Skipped: ${esc(c.skip)}</div></div></article>`;
     }
-    plan = null;
-    paint();
+    const r = c.r;
+    return `<article class="rv-card ${c.checked ? 'checked' : ''}" data-idx="${idx}">
+      <div class="rv-img" title="Click to enlarge"><img src="${c.image}" alt=""><span class="muted small">${esc(c.file)}</span></div>
+      <div class="rv-form">
+        <div class="rv-status"></div>
+        ${c.warnings.length ? `<ul class="rv-warn">${c.warnings.map((w) => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}
+        <div class="rv-grid">
+          <label class="field"><span>Name</span><input data-f="name" value="${esc(r.name)}"></label>
+          <label class="field"><span>Slot</span><select data-f="slot"><option value="">Artifact (no category)</option>${SLOT_TYPE_KEYS.map((t) => `<option value="${t}" ${r.slot === t ? 'selected' : ''}>${SLOT_TYPES[t].label}</option>`).join('')}</select></label>
+          <label class="field"><span>Rarity</span><select data-f="rarity">${RARITIES.map((x) => `<option value="${x.key}" ${r.rarity === x.key ? 'selected' : ''}>${x.label}</option>`).join('')}</select></label>
+          <label class="field"><span>Min. level</span><input type="number" min="1" step="1" data-f="level" value="${esc(r.level ?? '')}"></label>
+        </div>
+        <div class="field"><span>Stats</span><div class="rv-lines">${statRows(r.stats, 'stats')}</div>
+          <button type="button" class="btn sm ghost" data-add="stats">${uiIcon('plus')} Stat</button></div>
+        <label class="field"><span>Effect <small>(stats the app has no field for: shown, not calculated)</small></span><input data-f="effect" value="${esc(r.unmapped.join(', '))}"></label>
+        <div class="field"><span>Set <small>(empty = no set)</small></span><input data-f="setName" list="rv-sets" value="${esc(r.set?.name || '')}" placeholder="No set">
+          <div class="rv-tiers">${tiersHtml(c)}</div>
+          ${r.set ? `<button type="button" class="btn sm ghost" data-add-tier>${uiIcon('plus')} Set tier</button>` : ''}</div>
+        <label class="toggle rv-check"><input type="checkbox" data-f="checked" ${c.checked ? 'checked' : ''}><span class="toggle-ui"></span><span><b>Checked</b>: import this item</span></label>
+      </div></article>`;
   };
 
-  drop.querySelector('input').addEventListener('change', (e) => addFiles(e.target.files));
+  // what saving this card would do, in words
+  const statusHtml = (c) => {
+    const p = planImport([{ file: c.file, reading: toReading(c) }], state.items, state.sets);
+    const it = p.items[0];
+    const set = p.sets[0];
+    const what = !it.before
+      ? `<span class="tag new">New item</span>`
+      : it.changes.length
+        ? `<span class="tag upd">Updates ${esc(it.before.name)}</span> <span class="muted small">${it.changes.map((ch) => esc(ch.field)).join(', ')}</span>`
+        : `<span class="tag">Already up to date</span>`;
+    const setWhat = !set ? '' : !set.before ? ` <span class="tag new">New set ${esc(set.body.name)}</span>` : set.changes.length ? ` <span class="tag upd">Updates set ${esc(set.before.name)}</span>` : '';
+    return what + setWhat;
+  };
+  const paintFooter = () => {
+    const open = cards.filter((c) => !c.skip);
+    const checked = open.filter((c) => c.checked).length;
+    m.querySelector('.import-status').textContent = cards.length ? `${checked} of ${open.length} checked · ${cards.length - open.length} skipped` : '';
+    m.querySelector('[data-save]').disabled = !checked;
+  };
+  const paintCard = (idx) => {
+    const old = list.querySelector(`[data-idx="${idx}"]`);
+    const tmp = document.createElement('div');
+    tmp.innerHTML = cardHtml(cards[idx], idx);
+    old.replaceWith(tmp.firstElementChild);
+    refreshStatus(idx);
+  };
+  const refreshStatus = (idx) => {
+    const el = list.querySelector(`[data-idx="${idx}"] .rv-status`);
+    if (el) el.innerHTML = statusHtml(cards[idx]);
+    paintFooter();
+  };
+  const paintAll = () => {
+    list.innerHTML = cards.map(cardHtml).join('');
+    cards.forEach((c, i) => !c.skip && refreshStatus(i));
+    paintFooter();
+  };
+
+  const load = async (file) => {
+    if (!file) return;
+    try {
+      const data = JSON.parse(await file.text());
+      if (!Array.isArray(data?.tooltips)) throw new Error('this is not a file from read_tooltips.py');
+      cards = data.tooltips.map((t) => {
+        const r = structuredClone(t.reading);
+        const skipped = planImport([{ file: t.file, reading: r }], state.items, state.sets).skipped[0];
+        return { file: t.file, image: t.image, warnings: t.warnings || [], r, skip: skipped?.reason || null, checked: false };
+      });
+      cards.sort((a, b) => !!a.skip - !!b.skip); // items to check first
+      paintAll();
+    } catch (e) {
+      toast(`Could not load the file: ${e.message}`, 'err');
+    }
+  };
+  drop.querySelector('input').addEventListener('change', (e) => load(e.target.files[0]));
   drop.addEventListener('dragover', (e) => {
     e.preventDefault();
     drop.classList.add('drag');
@@ -1616,55 +1672,83 @@ function openScreenshotImport() {
   drop.addEventListener('drop', (e) => {
     e.preventDefault();
     drop.classList.remove('drag');
-    addFiles(e.dataTransfer.files);
+    load(e.dataTransfer.files[0]);
   });
-  entry.onPaste = (e) => {
-    if (e.clipboardData?.files.length) {
-      e.preventDefault();
-      addFiles(e.clipboardData.files);
-    }
-  };
-  m.querySelector('.shot-list').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-remove]');
-    if (!b || busy) return;
-    shots.splice(+b.dataset.remove, 1);
-    plan = shots.some((s) => s.reading || s.error) ? planImport(shots.map((s) => ({ file: s.name, reading: s.reading, error: s.error })), state.items, state.sets) : null;
-    paint();
-  });
-  m.querySelector('[data-read]').addEventListener('click', async () => {
-    busy = true;
-    const todo = shots.filter((s) => !s.reading && !s.error);
-    for (const [i, s] of todo.entries()) {
-      status(`Reading ${i + 1} of ${todo.length}…`);
-      paint();
-      try {
-        s.reading = (await api('POST', '/api/import/read', { image: s.url })).reading;
-      } catch (e) {
-        s.error = e.message;
+
+  const onEdit = (e) => {
+    const t = e.target;
+    const cardEl = t.closest('[data-idx]');
+    if (!cardEl || !t.dataset.f) return;
+    const idx = +cardEl.dataset.idx;
+    const c = cards[idx];
+    const f = t.dataset.f;
+    const row = t.closest('[data-path]');
+    const tier = t.closest('[data-t]');
+    if (row) linesAt(c, row.dataset.path)[+row.dataset.i][f] = f === 'value' ? num(t.value) ?? 0 : t.value;
+    else if (f === 'pieces') c.r.set.bonuses[+tier.dataset.t].pieces = Math.max(1, Math.round(num(t.value) || 1));
+    else if (f === 'tierEffect') c.r.set.bonuses[+tier.dataset.t].unmapped = t.value.trim() ? [t.value.trim()] : [];
+    else if (f === 'effect') c.r.unmapped = t.value.trim() ? [t.value.trim()] : [];
+    else if (f === 'level') c.r.level = num(t.value);
+    else if (f === 'slot') c.r.slot = t.value || null;
+    else if (f === 'checked') {
+      c.checked = t.checked;
+      cardEl.classList.toggle('checked', c.checked);
+    } else if (f === 'setName') {
+      if (!c.r.set && t.value.trim()) {
+        c.r.set = { name: t.value, existing_set: null, bonuses: [] };
+        paintCard(idx); // shows the tier editor; keep typing in the new input
+        const input = list.querySelector(`[data-idx="${idx}"] [data-f="setName"]`);
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+        return;
       }
-    }
-    busy = false;
-    status('');
-    plan = planImport(shots.map((s) => ({ file: s.name, reading: s.reading, error: s.error })), state.items, state.sets);
-    paint();
+      if (c.r.set) c.r.set.name = t.value;
+    } else c.r[f] = t.value;
+    refreshStatus(idx);
+  };
+  list.addEventListener('input', onEdit);
+  list.addEventListener('change', (e) => e.target.tagName === 'SELECT' || e.target.type === 'checkbox' ? onEdit(e) : null);
+  list.addEventListener('click', (e) => {
+    const cardEl = e.target.closest('[data-idx]');
+    if (!cardEl) return;
+    const idx = +cardEl.dataset.idx;
+    const c = cards[idx];
+    if (e.target.closest('.rv-img')) return cardEl.classList.toggle('zoom');
+    const add = e.target.closest('[data-add]');
+    const del = e.target.closest('[data-del]');
+    if (add) linesAt(c, add.dataset.add).push({ key: 'health', value: 0 });
+    else if (del) {
+      const row = del.closest('[data-path]');
+      linesAt(c, row.dataset.path).splice(+row.dataset.i, 1);
+    } else if (e.target.closest('[data-add-tier]')) {
+      const b = c.r.set.bonuses;
+      b.push({ pieces: (b.length ? Math.max(...b.map((t) => t.pieces)) : 1) + 1, stats: [], unmapped: [] });
+    } else if (e.target.closest('[data-del-tier]')) c.r.set.bonuses.splice(+e.target.closest('[data-t]').dataset.t, 1);
+    else return;
+    paintCard(idx);
   });
+
   m.querySelector('[data-save]').addEventListener('click', async () => {
-    busy = true;
-    paint();
-    status('Saving…');
+    const readings = cards.filter((c) => !c.skip && c.checked).map((c) => ({ file: c.file, reading: toReading(c) }));
+    const plan = planImport(readings, state.items, state.sets);
+    const added = plan.items.filter((i) => !i.before).length;
+    const updated = plan.items.filter((i) => i.before && i.changes.length).length;
+    const sets = plan.sets.filter((s) => !s.before || s.changes.length).length;
+    if (!planSize(plan)) return toast('The checked items are already up to date.', 'warn');
+    const msg = `Import <b>${added}</b> new and <b>${updated}</b> updated item(s)${sets ? ` and <b>${sets}</b> set(s)` : ''}?`;
+    if (!(await confirmDialog('Save import', msg))) return;
+    m.querySelector('[data-save]').disabled = true;
     try {
       await applyPlan(plan, api);
-      toast(`Imported ${planSize(plan)} change(s)`);
+      toast(`Imported ${added} new and ${updated} updated item(s)`);
       closeModal(entry);
       await loadData();
     } catch (e) {
       toast(`Import failed: ${e.message}`, 'err');
-      busy = false;
-      status('');
-      paint();
+      paintFooter();
     }
   });
-  paint();
+  paintFooter();
 }
 
 // ---- slot picker

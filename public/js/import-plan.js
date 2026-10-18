@@ -1,5 +1,5 @@
-// Turns screenshot readings (from POST /api/import/read) into item and set changes.
-// Shared by the Items page and import-items.mjs. Only English tooltips are imported.
+// Turns tooltip readings (from read_tooltips.py, checked on the Items page) into item and set changes.
+// Only English tooltips are imported.
 
 const norm = (s) =>
   String(s || '')
@@ -111,24 +111,4 @@ export async function applyPlan(plan, call) {
     if (it.id) await call('PUT', `/api/items/${encodeURIComponent(it.id)}`, body);
     else await call('POST', '/api/items', body);
   }
-}
-
-/** Plain-text summary, one line per change. */
-export function planText(plan) {
-  const lines = [];
-  for (const s of plan.sets) {
-    if (s.before && !s.changes.length) continue;
-    lines.push(s.before ? `~ set ${s.before.name}` : `+ set ${s.body.name}: ${fmtBonuses(s.body.bonuses) || 'no bonuses'}`);
-    for (const c of s.changes) lines.push(`    ${c.field}: ${c.before || '—'} → ${c.after || '—'}`);
-  }
-  for (const it of plan.items) {
-    if (it.before && !it.changes.length) {
-      lines.push(`= ${it.body.name} (unchanged)`);
-      continue;
-    }
-    lines.push(it.before ? `~ ${it.before.name}` : `+ ${it.body.name}: ${it.body.slot}, ${it.body.rarity}, Lv ${it.body.level ?? '—'}, ${fmtStats(it.body.stats)}`);
-    for (const c of it.changes) lines.push(`    ${c.field}: ${c.before || '—'} → ${c.after || '—'}`);
-  }
-  for (const s of plan.skipped) lines.push(`- skipped ${s.file}${s.name ? ` (${s.name})` : ''}: ${s.reason}`);
-  return lines.join('\n');
 }
