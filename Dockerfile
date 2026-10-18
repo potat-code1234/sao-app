@@ -7,7 +7,10 @@ ENV NODE_ENV=production \
     DATA_DIR=/data \
     REQUIRE_PASSWORD=1
 
-COPY package.json server.js ./
+# Packages are only needed to import items from screenshots (screenshot-reader.mjs).
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
+COPY server.js screenshot-reader.mjs ./
 COPY public ./public
 COPY Textures ./Textures
 # Seed data: copied into /data on the first start, when the volume is still empty.

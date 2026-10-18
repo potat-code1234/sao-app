@@ -5,6 +5,11 @@
   "description": "Local gear/accessory optimizer for an SAO-style Minecraft MMORPG",
   "scripts": {
     "start": "node server.js --open",
-    "import-textures": "node import-textures.js"
+    "import-textures": "node import-textures.js",
+    "import-items": "node import-items.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
+    "zod": "^4.6.7"
   }
 }

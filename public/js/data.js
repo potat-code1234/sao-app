@@ -91,6 +91,7 @@ export const RARITIES = [
   { key: 'epic', label: 'Epic', color: '#a371f7' },
   { key: 'legendary', label: 'Legendary', color: '#f5a524' },
   { key: 'mythic', label: 'Mythic', color: '#e5484d' },
+  { key: 'event', label: 'Event', color: '#e0458f' }, // pink / red / rainbow tooltips
 ];
 export const RARITY_MAP = Object.fromEntries(RARITIES.map((r) => [r.key, r]));
 

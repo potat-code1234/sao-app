@@ -22,9 +22,19 @@ The repo deploys with Coolify's **Docker Compose** build pack, using [docker-com
   | `VIEWER_PASSWORD` (+ `VIEWER_USER`, default `viewer`) | Read-only: sees the items and sets and can use the equipment page and the optimizer, but can't change items or sets. Leave it empty to turn this login off. |
 
   User names aren't case-sensitive. Logins last 30 days; changing a password logs everyone out. `/healthz` stays open for health checks.
+- **Import from screenshots:** set `ANTHROPIC_API_KEY` (a Claude API key) in Coolify to turn it on. See [Import items from screenshots](#import-items-from-screenshots).
 - **Textures:** they are part of the image. After running `node import-textures.js` locally, commit and push the `Textures/` folder and redeploy.
 
 Without Coolify: `APP_PASSWORD=… docker compose up -d --build`, then open port 3077 of the container (add a `ports:` mapping or put a reverse proxy in front).
+
+## Import items from screenshots
+
+Claude reads in-game item tooltips (name, minimum level, rarity from the frame colour, stats, category, set bonuses) and the app turns them into items and sets. Only **English** tooltips are imported: French ones are skipped, and so are runes and other items that have no equipment slot. An item or set that already exists is updated rather than duplicated, keeping its image, texture and notes. Equipment without a category, such as gifts, lanterns and masks, becomes an artifact.
+
+- **In the app:** as admin, *Items › Import screenshots*. Drop, paste (Ctrl+V) or choose screenshots, press *Read screenshots*, check the list of changes, then *Save*.
+- **From the command line:** `node import-items.mjs <screenshots or folders> --url https://your-app --user admin --password …`. Add `--dry-run` to only see the changes, or `--yes` to save without asking. Run it with no arguments for the full option list at the top of the file.
+
+Either way the server does the reading, so it needs `ANTHROPIC_API_KEY` in its environment. The Docker image installs the packages for it; when running locally, run `npm install` once and set the key before `start.bat`. Each screenshot is one Claude request (`claude-opus-5-5`), roughly a few cents.
 
 ## Pages
 
@@ -61,6 +71,7 @@ You can edit these files by hand, then press **Reload** in the app. The file nam
   "slot": "ring",
   "set": "black-swordsman",
   "rarity": "rare",
+  "level": 12,
   "stats": { "dodge": 4, "moveSpeed": 5 },
   "effect": "Optional text, shown but not calculated",
   "notes": "",
@@ -69,7 +80,8 @@ You can edit these files by hand, then press **Reload** in the app. The file nam
 ```
 
 - `slot`: `glove`, `amulet`, `bracelet`, `ring`, `artifact`, `helmet`, `chestplate`, `leggings`, `boots`, `offhand`
-- `rarity`: `common`, `uncommon`, `rare`, `epic`, `legendary`, `mythic`
+- `rarity`: `common`, `uncommon`, `rare`, `epic`, `legendary`, `mythic`, `event` (pink, red or rainbow tooltips)
+- `level`: minimum level to equip; leave it out to use the set's `level`. The optimizer's *Item level* range filters on it, and items with no level are always kept.
 - `set`: the id (file name) of a set, or `null`
 
 **Set**
@@ -77,6 +89,7 @@ You can edit these files by hand, then press **Reload** in the app. The file nam
 ```json
 {
   "name": "Black Swordsman",
+  "level": 12,
   "cumulative": true,
   "bonuses": [
     { "pieces": 2, "stats": { "attackDamage": 4 } },

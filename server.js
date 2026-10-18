@@ -3,7 +3,8 @@
 // Environment (all optional): PORT, HOST, DATA_DIR (where Items/ and Data/ live; seeded from the
 // app folder on first start), ADMIN_PASSWORD (+ ADMIN_USER, default "admin") to require a login,
 // VIEWER_PASSWORD (+ VIEWER_USER, default "viewer") for a read-only login, REQUIRE_PASSWORD=1 to
-// refuse to start without an admin password (set in the Docker image).
+// refuse to start without an admin password (set in the Docker image), ANTHROPIC_API_KEY to import
+// items from screenshots (needs `npm install`; the rest of the app has no dependencies).
 const http = require('http');
 const fs = require('fs');
 const fsp = fs.promises;
@@ -28,6 +29,8 @@ const ACCOUNTS = [
   ['viewer', process.env.VIEWER_USER || 'viewer', process.env.VIEWER_PASSWORD || ''],
 ].filter(([, , password]) => password);
 const AUTH_ON = ACCOUNTS.some(([role]) => role === 'admin');
+// Importing items from screenshots reads them with Claude (screenshot-reader.mjs).
+const IMPORT_CONFIGURED = !!(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
 const SESSION_COOKIE = 'sao_session';
 const SESSION_DAYS = 30;
 
@@ -257,6 +260,12 @@ async function saveImage(id, dataUrl) {
   return file;
 }
 
+// Minimum level to equip: a whole number >= 1, or null when unknown.
+function cleanLevel(v) {
+  const n = Math.round(Number(v));
+  return v !== null && v !== '' && Number.isFinite(n) && n > 0 ? n : null;
+}
+
 function cleanItem(body) {
   const out = {
     name: String(body.name || '').trim() || 'Unnamed item',
@@ -275,6 +284,8 @@ function cleanItem(body) {
   }
   if (typeof body.image === 'string' && body.image) out.image = body.image;
   if (typeof body.texture === 'string' && /^[\w.-]+\/[\w.-]+$/.test(body.texture)) out.texture = body.texture;
+  const level = cleanLevel(body.level); // without one, the item uses its set's level
+  if (level) out.level = level;
   return out;
 }
 
@@ -313,8 +324,10 @@ async function listTextures() {
 // ---------- sets ----------
 function cleanSet(body) {
   const tiers = Array.isArray(body.bonuses) ? body.bonuses : [];
+  const level = cleanLevel(body.level); // default level for pieces that don't set their own
   return {
     name: String(body.name || '').trim() || 'Unnamed set',
+    ...(level ? { level } : {}),
     cumulative: body.cumulative !== false,
     bonuses: tiers
       .map((t) => {
@@ -362,6 +375,27 @@ async function handleApi(req, res, url, role) {
 
   if (kind === 'textures' && method === 'GET') {
     return send(res, 200, { packs: await listTextures() });
+  }
+
+  // Read one tooltip screenshot with Claude (admin only: writes from read-only logins are refused earlier).
+  if (kind === 'import' && id === 'read' && method === 'POST') {
+    if (!IMPORT_CONFIGURED) return send(res, 503, { error: 'Screenshot import is not set up: add ANTHROPIC_API_KEY to the server environment.' });
+    const body = await readBody(req);
+    const m = /^data:(image\/(?:png|jpeg|webp|gif));base64,([A-Za-z0-9+/=]+)$/.exec(String(body.image || ''));
+    if (!m) return send(res, 400, { error: 'Send a PNG, JPG, WEBP or GIF image.' });
+    let reader;
+    try {
+      reader = await import('./screenshot-reader.mjs');
+    } catch (e) {
+      console.error(e);
+      return send(res, 503, { error: 'Screenshot import needs its packages: run npm install.' });
+    }
+    const [items, sets] = await Promise.all([readJsonDir(ITEMS_DIR), readJsonDir(SETS_DIR)]);
+    try {
+      return send(res, 200, { reading: await reader.readScreenshot({ mediaType: m[1], data: m[2] }, items.list, sets.list) });
+    } catch (e) {
+      return send(res, e instanceof reader.Anthropic.APIError ? 502 : 500, { error: `Could not read the screenshot: ${e.message}` });
+    }
   }
 
   if (kind === 'items' || kind === 'sets') {
@@ -435,7 +469,9 @@ const server = http.createServer(async (req, res) => {
       if (p.startsWith('/api/') || req.method !== 'GET') return send(res, 401, { error: 'Login required' });
       return redirect(res, '/login');
     }
-    if (p === '/api/me') return send(res, 200, { role, auth: AUTH_ON, user: ACCOUNTS.find(([r]) => r === role)?.[1] || null });
+    if (p === '/api/me') {
+      return send(res, 200, { role, auth: AUTH_ON, user: ACCOUNTS.find(([r]) => r === role)?.[1] || null, screenshotImport: IMPORT_CONFIGURED });
+    }
     if (role !== 'admin' && p.startsWith('/api/') && req.method !== 'GET') return send(res, 403, { error: 'This account is read-only.' });
     if (p.startsWith('/api/')) return await handleApi(req, res, url, role);
     if (url.pathname.startsWith('/item-images/')) {

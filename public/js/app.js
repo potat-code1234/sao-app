@@ -5,6 +5,7 @@ import {
 } from './data.js';
 import { computeBuild, scoreStats, linearValue, unmetMins, setBonusFor, fmt, fmtStat, fmtDelta, num } from './calc.js';
 import { statIcon, slotIcon, uiIcon } from './icons.js';
+import { planImport, planSize, applyPlan } from './import-plan.js';
 
 // ---------------------------------------------------------------- utilities
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -79,6 +80,8 @@ function defaultProfile() {
       respectLocks: true,
       oneOccult: false,
       timeLimitSec: 8,
+      minLevel: null, // only consider items whose minimum level is in this range (unknown level = always)
+      maxLevel: null,
     },
     builds: [],
   };
@@ -160,6 +163,9 @@ const currentBuild = (equipped = state.profile.equipped) =>
   computeBuild(state.profile.baseStats, equipped, state.itemsById, state.setsById);
 
 const rarityOf = (item) => RARITY_MAP[item?.rarity] || RARITY_MAP.common;
+// Minimum level to equip: the item's own, else its set's; null when unknown.
+const levelOf = (item) => item.level || state.setsById[item.set]?.level || null;
+const levelTag = (item) => (levelOf(item) ? `<span class="tag" title="Minimum level to equip">Lv ${levelOf(item)}</span>` : '');
 // Small textures (Minecraft-style 16x16) are scaled up with crisp pixels.
 const PX = ` onload="if(this.naturalWidth<=64)this.classList.add('px')"`;
 const imgUrl = (item) => `/item-images/${encodeURIComponent(item.image)}?v=${item.imageVersion || 0}`;
@@ -385,6 +391,7 @@ function filteredItems() {
     name: byName,
     slot: (a, b) => SLOT_TYPE_KEYS.indexOf(a.slot) - SLOT_TYPE_KEYS.indexOf(b.slot) || byName(a, b),
     rarity: (a, b) => rIdx(b) - rIdx(a) || byName(a, b),
+    level: (a, b) => (levelOf(a) ?? Infinity) - (levelOf(b) ?? Infinity) || byName(a, b),
   };
   return list.sort(sorters[f.sort] || sorters.value);
 }
@@ -405,6 +412,7 @@ function itemCard(it) {
         <button class="owned-toggle ${owned ? 'on' : ''}" data-action="toggle-owned" data-id="${id}" title="${owned ? 'Owned — click to mark as not owned' : 'Not owned — click to mark as owned'}">${uiIcon('check')}</button>
       </div>
       <div class="item-meta">
+        ${levelTag(it)}
         <span class="tag">${SLOT_TYPES[it.slot]?.label || esc(it.slot || 'No slot')}</span>
         <span class="tag rarity">${r.label}</span>
         ${set ? `<span class="tag set">${esc(set.name)}</span>` : it.set ? '<span class="tag warn">missing set</span>' : ''}
@@ -439,7 +447,11 @@ function renderItems() {
   for (const it of state.items) counts[it.slot] = (counts[it.slot] || 0) + 1;
   return `<div class="layout-single">
     <section class="panel">
-      ${panelHead('Item storage', `<button class="btn btn-primary admin-only" data-action="new-item">${uiIcon('plus')} New item</button>`)}
+      ${panelHead(
+        'Item storage',
+        `<div class="btn-row admin-only"><button class="btn" data-action="import-shots">${uiIcon('image')} Import screenshots</button>
+          <button class="btn btn-primary" data-action="new-item">${uiIcon('plus')} New item</button></div>`
+      )}
       <div class="toolbar">
         <label class="search">${uiIcon('search')}<input id="item-search" data-filter="q" value="${esc(f.q)}" placeholder="Search name, set, effect…"></label>
         <select data-filter="set" title="Set">
@@ -452,7 +464,7 @@ function renderItems() {
           <option value="missing" ${f.owned === 'missing' ? 'selected' : ''}>Not owned</option>
         </select>
         <select data-filter="sort" title="Sort">
-          ${[['value', 'Sort: value'], ['name', 'Sort: name'], ['slot', 'Sort: slot'], ['rarity', 'Sort: rarity']]
+          ${[['value', 'Sort: value'], ['name', 'Sort: name'], ['slot', 'Sort: slot'], ['rarity', 'Sort: rarity'], ['level', 'Sort: level']]
             .map(([v, l]) => `<option value="${v}" ${f.sort === v ? 'selected' : ''}>${l}</option>`)
             .join('')}
         </select>
@@ -483,7 +495,7 @@ function setCard(set) {
   return `<article class="set-card">
     <header class="set-card-head">
       <div><h3>${esc(set.name)}</h3>
-        <span class="muted">${pieces.length} piece${pieces.length === 1 ? '' : 's'} · ${set.cumulative !== false ? 'bonuses stack' : 'highest tier only'} · ${eqCount} equipped</span></div>
+        <span class="muted">${set.level ? `Lv ${set.level} · ` : ''}${pieces.length} piece${pieces.length === 1 ? '' : 's'} · ${set.cumulative !== false ? 'bonuses stack' : 'highest tier only'} · ${eqCount} equipped</span></div>
       <div class="row-actions admin-only">
         <button class="icon-btn" data-action="new-item-in-set" data-id="${id}" title="Add an item to this set">${uiIcon('plus')}</button>
         <button class="icon-btn" data-action="edit-set" data-id="${id}" title="Edit set">${uiIcon('edit')}</button>
@@ -535,8 +547,12 @@ function buildOptPayload() {
   const fixedIds = new Set(fixed.map((f) => f.item.id));
   const types = new Set(slots.map((s) => s.type));
   const slim = (it) => ({ id: it.id, slot: it.slot, set: it.set || null, stats: it.stats || {} });
+  const levelOk = (it) => {
+    const lv = levelOf(it);
+    return lv === null || ((o.minLevel == null || lv >= o.minLevel) && (o.maxLevel == null || lv <= o.maxLevel));
+  };
   const items = state.items
-    .filter((it) => types.has(it.slot) && (!o.onlyOwned || isOwned(it)) && (!fixedIds.has(it.id) || (o.allowDuplicates && wornTwice(it.slot))))
+    .filter((it) => types.has(it.slot) && (!o.onlyOwned || isOwned(it)) && levelOk(it) && (!fixedIds.has(it.id) || (o.allowDuplicates && wornTwice(it.slot))))
     .map(slim);
   const occultIds = o.oneOccult ? state.items.filter(isOccult).map((it) => it.id) : [];
   return {
@@ -558,9 +574,11 @@ function buildOptPayload() {
 function optSummary() {
   const pl = buildOptPayload();
   const fixedCount = pl.fixed.length;
+  const { minLevel: lo, maxLevel: hi } = state.profile.optimizer;
+  const levels = lo != null && hi != null ? `level ${lo}–${hi}` : lo != null ? `level ≥ ${lo}` : hi != null ? `level ≤ ${hi}` : '';
   return `<b>${pl.slots.length}</b> slot${pl.slots.length === 1 ? '' : 's'} to fill from <b>${pl.items.length}</b> candidate item${pl.items.length === 1 ? '' : 's'}${
     fixedCount ? ` · <b>${fixedCount}</b> kept as equipped` : ''
-  }${pl.limits.length ? ' · max <b>1</b> Occult item' : ''}`;
+  }${pl.limits.length ? ' · max <b>1</b> Occult item' : ''}${levels ? ` · ${levels}` : ''}`;
 }
 
 function toggle(flag, label, checked, hint = '') {
@@ -614,6 +632,12 @@ function renderOptimizer() {
           ${toggle('respectLocks', 'Keep locked slots as they are', o.respectLocks)}
           ${toggle('allowDuplicates', 'Allow the same ring twice', o.allowDuplicates, 'Rings are the only items you can wear twice. Turn on if you own two copies of a ring.')}
           ${state.items.some(isOccult) ? toggle('oneOccult', 'Only one Occult item', o.oneOccult, 'Wearing 2+ Shadow Neophyte pieces costs 0.6/s health regen per piece and halves healing received') : ''}
+          <div class="field inline-field" title="Only consider items whose minimum level is in this range. Items without a level are always considered.">
+            <span>Item level</span>
+            <input type="number" min="1" step="1" data-optlevel="minLevel" value="${esc(o.minLevel ?? '')}" placeholder="min" aria-label="Minimum item level">
+            <span class="muted">to</span>
+            <input type="number" min="1" step="1" data-optlevel="maxLevel" value="${esc(o.maxLevel ?? '')}" placeholder="max" aria-label="Maximum item level">
+          </div>
           <label class="field inline-field"><span>Time limit (s)</span><input type="number" min="1" max="120" data-optnum="timeLimitSec" value="${esc(o.timeLimitSec)}"></label>
           <div class="opt-summary" id="opt-summary">${optSummary()}</div>
           <button class="btn btn-primary btn-xl" data-action="run-opt" ${state.opt.running ? 'disabled' : ''}>${uiIcon('play')} Find best gear</button>
@@ -1123,9 +1147,10 @@ function openItemEditor(item, preset = {}) {
         </div>
         <div class="form-fields">
           <label class="field"><span>Name</span><input name="name" value="${esc(draft.name)}" placeholder="e.g. Ring of the Black Swordsman" autofocus></label>
-          <div class="field-row">
+          <div class="field-row three">
             <label class="field"><span>Slot</span><select name="slot">${SLOT_TYPE_KEYS.map((t) => `<option value="${t}" ${draft.slot === t ? 'selected' : ''}>${SLOT_TYPES[t].label}</option>`).join('')}</select></label>
             <label class="field"><span>Rarity</span><select name="rarity">${RARITIES.map((r) => `<option value="${r.key}" ${draft.rarity === r.key ? 'selected' : ''}>${r.label}</option>`).join('')}</select></label>
+            <label class="field" title="Minimum level to equip. Leave empty to use the set's level."><span>Min. level</span><input type="number" name="level" min="1" step="1" value="${esc(draft.level ?? '')}"></label>
           </div>
           <div class="field"><span>Set</span><div class="inline"><select name="set">${setOptions(draft.set)}</select>
             <button type="button" class="btn sm" data-new-set>${uiIcon('plus')} New set</button></div></div>
@@ -1217,11 +1242,19 @@ function openItemEditor(item, preset = {}) {
     }
   };
   F.slot.addEventListener('change', paintImage);
+  // an empty level falls back to the set's level: show it as the placeholder
+  const paintLevelHint = () => {
+    const setLevel = state.setsById[F.set.value]?.level;
+    F.level.placeholder = setLevel ? `${setLevel} (set)` : '—';
+  };
+  F.set.addEventListener('change', paintLevelHint);
+  paintLevelHint();
 
   m.querySelector('[data-new-set]').addEventListener('click', () =>
     openSetEditor(null, {
       onSaved: (set) => {
         F.set.innerHTML = setOptions(set.id);
+        paintLevelHint();
       },
     })
   );
@@ -1239,6 +1272,7 @@ function openItemEditor(item, preset = {}) {
       slot: F.slot.value,
       rarity: F.rarity.value,
       set: F.set.value || null,
+      level: num(F.level.value),
       stats: {},
       effect: F.effect.value.trim(),
       notes: F.notes.value.trim(),
@@ -1317,7 +1351,16 @@ function openSetEditor(set, { onSaved } = {}) {
     `<header class="modal-head"><span class="ph-diamond"></span><h2>${isNew ? 'New set' : 'Edit set'}</h2>
       <button class="icon-btn" data-close title="Close">${uiIcon('close')}</button></header>
     <form class="modal-body set-form" autocomplete="off">
-      <label class="field"><span>Set name</span><input name="name" value="${esc(set?.name || '')}" placeholder="e.g. Midnight Coat Set" autofocus></label>
+      <div class="field-row name-level">
+        <label class="field"><span>Set name</span><input name="name" value="${esc(set?.name || '')}" placeholder="e.g. Midnight Coat Set" autofocus></label>
+        <label class="field" title="Minimum level to equip, for every piece that doesn't set its own"><span>Min. level</span><input type="number" name="level" min="1" step="1" value="${esc(set?.level ?? '')}" placeholder="—"></label>
+      </div>
+      ${
+        !isNew && state.items.some((i) => i.set === set.id && i.level)
+          ? `<label class="toggle"><input type="checkbox" name="levelAll"><span class="toggle-ui"></span><span>Use this level for every piece
+              <small class="muted">(${state.items.filter((i) => i.set === set.id && i.level).length} piece(s) have their own level)</small></span></label>`
+          : ''
+      }
       <div class="field"><span>How bonuses apply</span>
         <div class="seg">
           <label class="seg-btn radio"><input type="radio" name="mode" value="stack" ${set?.cumulative !== false ? 'checked' : ''}>Stack (2pc + 4pc both active)</label>
@@ -1421,6 +1464,7 @@ function openSetEditor(set, { onSaved } = {}) {
     }
     const data = {
       name,
+      level: num(F.level.value),
       cumulative: F.mode.value !== 'highest',
       bonuses: tiers.map((t) => {
         const stats = {};
@@ -1435,6 +1479,12 @@ function openSetEditor(set, { onSaved } = {}) {
     try {
       const saved = isNew ? await api('POST', '/api/sets', data) : await api('PUT', `/api/sets/${encodeURIComponent(set.id)}`, data);
       upsert(state.sets, saved);
+      if (F.levelAll?.checked) {
+        // drop the pieces' own levels so they all use the set's
+        for (const it of state.items.filter((i) => i.set === saved.id && i.level)) {
+          upsert(state.items, await api('PUT', `/api/items/${encodeURIComponent(it.id)}`, { ...it, level: null }));
+        }
+      }
       toast(`Saved set “${saved.name}”`);
       closeModal(entry);
       render();
@@ -1479,8 +1529,146 @@ async function deleteSet(id) {
   }
 }
 
+// ---- import items from tooltip screenshots (the server reads them with Claude)
+function openScreenshotImport() {
+  const shots = []; // { name, url, reading?, error? }
+  let plan = null;
+  let busy = false;
+  const entry = openModal(
+    `<header class="modal-head"><span class="ph-diamond"></span><h2>Import screenshots</h2>
+      <div class="ph-right"><button class="icon-btn" data-close title="Close">${uiIcon('close')}</button></div></header>
+    <div class="modal-body">
+      ${
+        state.me.screenshotImport
+          ? ''
+          : '<div class="warn-line">Reading screenshots is not set up on this server: add <code>ANTHROPIC_API_KEY</code> to its environment variables and restart it.</div>'
+      }
+      <p class="hint">Add screenshots of item tooltips: drop them here, paste them (Ctrl+V) or choose files. Claude reads the name, level, rarity,
+        stats and set bonuses. Only <b>English</b> tooltips are imported; French ones and runes are skipped. Nothing is saved until you press <b>Save</b>.</p>
+      <label class="shot-drop" tabindex="0">${uiIcon('image')}<span>Drop, paste or <u>choose</u> screenshots</span>
+        <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden></label>
+      <div class="shot-list"></div>
+      <div class="import-plan"></div>
+    </div>
+    <footer class="modal-foot">
+      <span class="import-status muted small"></span>
+      <span class="spacer"></span>
+      <button class="btn" data-close>Cancel</button>
+      <button class="btn" data-read>Read screenshots</button>
+      <button class="btn btn-primary" data-save>${uiIcon('check')} Save</button>
+    </footer>`,
+    'modal-import'
+  );
+  const m = entry.modal;
+  const drop = m.querySelector('.shot-drop');
+  const status = (text) => (m.querySelector('.import-status').textContent = text);
+
+  const planRows = () => {
+    if (!plan) return '';
+    const row = (badge, cls, title, sub, changes = []) =>
+      `<div class="plan-row ${cls}"><span class="plan-badge">${badge}</span><div class="plan-main"><b>${esc(title)}</b>${sub ? ` <span class="muted small">${esc(sub)}</span>` : ''}
+        ${changes.map((c) => `<div class="plan-change"><span>${esc(c.field)}</span> ${esc(c.before || '—')} → <b>${esc(c.after || '—')}</b></div>`).join('')}</div></div>`;
+    const rows = [
+      ...plan.sets.filter((s) => !s.before || s.changes.length).map((s) => (s.before ? row('Update', 'upd', s.before.name, 'set', s.changes) : row('New', 'new', s.body.name, `set · ${s.body.bonuses.length} tiers`))),
+      ...plan.items.map((it) =>
+        !it.before
+          ? row('New', 'new', it.body.name, `${it.body.slot} · ${it.body.rarity} · Lv ${it.body.level ?? '—'} · ${it.file}`)
+          : it.changes.length
+            ? row('Update', 'upd', it.before.name, it.file, it.changes)
+            : row('Same', 'same', it.body.name, `${it.file} · already up to date`)
+      ),
+      ...plan.skipped.map((s) => row('Skip', 'skip', s.name || s.file, `${s.file} · ${s.reason}`)),
+    ];
+    return `<div class="section-label">What will change <small>${planSize(plan)} save(s)</small></div>${rows.join('')}`;
+  };
+  const paint = () => {
+    m.querySelector('.shot-list').innerHTML = shots
+      .map(
+        (s, i) => `<figure class="shot ${s.error ? 'err' : s.reading ? 'ok' : ''}" title="${esc(s.error || s.name)}">
+          <img src="${s.url}" alt=""><figcaption>${esc(s.name)}</figcaption>
+          ${busy ? '' : `<button type="button" class="img-remove" data-remove="${i}" title="Remove">${uiIcon('close')}</button>`}</figure>`
+      )
+      .join('');
+    m.querySelector('.import-plan').innerHTML = planRows();
+    m.querySelector('[data-read]').disabled = busy || !shots.some((s) => !s.reading && !s.error);
+    m.querySelector('[data-save]').disabled = busy || !plan || !planSize(plan);
+  };
+  const addFiles = async (files) => {
+    for (const file of [...files].filter((f) => /^image\/(png|jpeg|webp|gif)$/.test(f.type))) {
+      const url = await new Promise((res, rej) => {
+        const fr = new FileReader();
+        fr.onload = () => res(fr.result);
+        fr.onerror = () => rej(fr.error);
+        fr.readAsDataURL(file);
+      });
+      shots.push({ name: file.name || `pasted-${shots.length + 1}.png`, url });
+    }
+    plan = null;
+    paint();
+  };
+
+  drop.querySelector('input').addEventListener('change', (e) => addFiles(e.target.files));
+  drop.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    drop.classList.add('drag');
+  });
+  drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
+  drop.addEventListener('drop', (e) => {
+    e.preventDefault();
+    drop.classList.remove('drag');
+    addFiles(e.dataTransfer.files);
+  });
+  entry.onPaste = (e) => {
+    if (e.clipboardData?.files.length) {
+      e.preventDefault();
+      addFiles(e.clipboardData.files);
+    }
+  };
+  m.querySelector('.shot-list').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-remove]');
+    if (!b || busy) return;
+    shots.splice(+b.dataset.remove, 1);
+    plan = shots.some((s) => s.reading || s.error) ? planImport(shots.map((s) => ({ file: s.name, reading: s.reading, error: s.error })), state.items, state.sets) : null;
+    paint();
+  });
+  m.querySelector('[data-read]').addEventListener('click', async () => {
+    busy = true;
+    const todo = shots.filter((s) => !s.reading && !s.error);
+    for (const [i, s] of todo.entries()) {
+      status(`Reading ${i + 1} of ${todo.length}…`);
+      paint();
+      try {
+        s.reading = (await api('POST', '/api/import/read', { image: s.url })).reading;
+      } catch (e) {
+        s.error = e.message;
+      }
+    }
+    busy = false;
+    status('');
+    plan = planImport(shots.map((s) => ({ file: s.name, reading: s.reading, error: s.error })), state.items, state.sets);
+    paint();
+  });
+  m.querySelector('[data-save]').addEventListener('click', async () => {
+    busy = true;
+    paint();
+    status('Saving…');
+    try {
+      await applyPlan(plan, api);
+      toast(`Imported ${planSize(plan)} change(s)`);
+      closeModal(entry);
+      await loadData();
+    } catch (e) {
+      toast(`Import failed: ${e.message}`, 'err');
+      busy = false;
+      status('');
+      paint();
+    }
+  });
+  paint();
+}
+
 // ---- slot picker
-const wornTwice = (slotType) => !!SLOT_TYPES[slotType]?.duplicates;
+const wornTwice =(slotType) => !!SLOT_TYPES[slotType]?.duplicates;
 
 // Slot already holding this item: with another artifact etc. the two slots swap; a ring can sit in both ring slots.
 const swapSlotFor = (eq, slotId, itemId) =>
@@ -1571,7 +1759,7 @@ function openSlotPicker(slotId) {
         return `<button class="pick-row ${isCur ? 'current' : ''} ${isOwned(it) ? '' : 'not-owned'}" data-pick="${esc(it.id)}" style="--r:${rarityOf(it).color}">
           <span class="pick-thumb">${thumb(it)}</span>
           <span class="pick-main">
-            <span class="pick-name">${esc(it.name)}${where}${set ? ` <span class="tag set">${esc(set.name)}</span>` : ''}${isOwned(it) ? '' : ' <span class="tag dim">not owned</span>'}</span>
+            <span class="pick-name">${esc(it.name)}${where} ${levelTag(it)}${set ? ` <span class="tag set">${esc(set.name)}</span>` : ''}${isOwned(it) ? '' : ' <span class="tag dim">not owned</span>'}</span>
             ${isCur ? statChips(it.stats) : statChips(d, { delta: true }) || '<span class="muted small">No stat change</span>'}
           </span>
           <span class="pick-score ${ds > 0.0001 ? 'pos' : ds < -0.0001 ? 'neg' : 'muted'}">${isCur ? '—' : `${ds >= 0 ? '+' : ''}${fmt(ds)}`}<small>score</small></span>
@@ -1676,6 +1864,7 @@ const ACTIONS = {
     F.owned.checked = isOwned(it);
     F.effect.value = copy.effect || '';
     F.notes.value = copy.notes || '';
+    F.level.value = copy.level ?? '';
     for (const k of STAT_KEYS) F[`stat:${k}`].value = copy.stats?.[k] ?? '';
   },
   'delete-item': (el) => deleteItem(el.dataset.id),
@@ -1703,6 +1892,7 @@ const ACTIONS = {
     $$('.slot-filter .seg-btn').forEach((b) => b.classList.toggle('on', b.dataset.value === state.filters.slot));
     refreshItemList();
   },
+  'import-shots': () => openScreenshotImport(),
   'new-set': () => openSetEditor(null),
   'edit-set': (el) => state.setsById[el.dataset.id] && openSetEditor(state.setsById[el.dataset.id]),
   'delete-set': (el) => deleteSet(el.dataset.id),
@@ -1759,7 +1949,7 @@ const ACTIONS = {
 };
 
 // Actions that change items or sets on the server.
-const ADMIN_ACTIONS = new Set(['new-item', 'new-item-in-set', 'edit-item', 'dup-item', 'delete-item', 'new-set', 'edit-set', 'delete-set']);
+const ADMIN_ACTIONS = new Set(['new-item', 'new-item-in-set', 'edit-item', 'dup-item', 'delete-item', 'new-set', 'edit-set', 'delete-set', 'import-shots']);
 
 document.addEventListener('click', (e) => {
   const nav = e.target.closest('[data-nav]');
@@ -1822,6 +2012,11 @@ document.addEventListener('input', (e) => {
       }
     }
     saveProfile();
+  } else if (t.dataset.optlevel) {
+    state.profile.optimizer[t.dataset.optlevel] = num(t.value);
+    saveProfile();
+    const s = $('#opt-summary');
+    if (s) s.innerHTML = optSummary();
   } else if (t.dataset.optnum) {
     state.profile.optimizer[t.dataset.optnum] = num(t.value) ?? 8;
     saveProfile();
